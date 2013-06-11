@@ -13,6 +13,9 @@ function fields = TmodelFields(~)
 % metFields
 % mNumFields
 % allFields
+%
+%CALLED BY
+% verifyModel
 
 % Declare fields
 fields = cell(4,1) ;

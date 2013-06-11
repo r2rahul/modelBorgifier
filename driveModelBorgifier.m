@@ -1,72 +1,80 @@
 % driveAddModel walks through the process of comparing and merging models.
 % It is not meant to be used as a function, rather as a guide.
 
+%% Load and verify Cmodel. (The Compare Model).
+if isunix
+    fileName = '/home/jts/projdata/Proj SMP/Primaerdaten/modeling/common/cobra/addModelgit/test/iBSU1103.xml';
+else ispc
+    fileName = '\test\iBSU1103.xml';
+end
 
-
-%% Load and verify Cmodel. (The Compare Model). 
-fileName = ...
-% ['/home/jts/techdata/Bioinformatics/modeling/models' ...
-%     '/coli/iAF1260/Ec_iAF1260_flux1.xml'] ;
-% fileName = 'T:\Bioinformatics\modeling\models\Mycoplasma pneumoniae\iJW145.xml' ;
-
-% With regular COBRA function.
-Cmodel = readCbModel(fileName) ;
+% Load with regular COBRA function.
+Cmodel = readCbModel(fileName);
 
 % Or with custom written script. 
-% Cmodel = readModel_xxxx(fileName) ;
+% Cmodel = readModel_xxxx(fileName);
 
 % Verify model is ready for subsequent scripts. 
-Cmodel = verifyModel(Cmodel) ;
+Cmodel = verifyModel(Cmodel);
 
 % Now is a good time to see if this model carries flux. OPTIONAL.
-
+solverOkay = changeCobraSolver('glpk','LP'); 
+CmodelSol = optimizeCbModel(Cmodel); 
 
 %% Load Tmodel. (The Template Model). 
 % Load a matlab workspace with a previously used Tmodel.
 if isunix
-    load('/models/Tmodel.mat')
+    load('/Tmodel.mat')
 elseif ispc
-    load('t:\Bioinformatics\modeling\models\Tmodel.mat')
+    load('\Tmodel.mat')
 end
 
-% Or use any model as the template model. 
-% iBSU = readmodel_ibsu1103 ; 
+% Or use any model as the template model.
+if isunix
+    fileName = '/home/jts/projdata/Proj SMP/Primaerdaten/modeling/common/cobra/addModelgit/test/iJO1366.xml';
+else ispc
+    fileName = '\test\iBSU1466.xml';
+end
+
+% Load with regular COBRA function.
+Tmodel = readCbModel(fileName);
 
 % If Tmodel is just another model, verify it as well and convert it to a
 % proper format for comparison. Also make sure it carries flux. 
 if ~isfield(Tmodel,'Models')
-    Tmodel = verifyModel(Tmodel) ;
-    Tmodel = buildTmodel(Tmodel) ; 
+    Tmodel = verifyModel(Tmodel);
+    TmodelSol = optimizeCbModel(Tmodel1); 
+    Tmodel = buildTmodel(Tmodel); 
 end
 
 %% Compare models. 
 % Score Cmodel against Tmodel. 
-[Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,Tmodel) ;
+[Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,Tmodel);
 
 %% Match models. 
 % Initial comparison and matching.
-[rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score) ;
+[rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score);
 
 % Subsequent comparisons and matching. 
 [rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score, ...
-                                          rxnList,metList,Stats) ;
+                                          rxnList,metList,Stats);
 
 %% Merge models and test results.
 [TmodelC,Cspawn,Stats1] = evaluateTmodel(Cmodel,Tmodel, ...
-                                        rxnList,metList,Stats) ;
+                                        rxnList,metList,Stats);
 
 %% Extract a model. 
-modelToExtract = 'iJW145' ;%'iAF1260' ;
-Cspawn = readCbTmodel(modelToExtract,TmodelC) ; 
+modelToExtract = 'iJW145';%'iAF1260';
+Cspawn = readCbTmodel(modelToExtract,TmodelC); 
 
 %% Write to SBML. 
 % You will be prompted with a dialoge box for the file name, or you can
 % enter it after 'sbml'. This version of writeCbModel does write all the 
 % additional information to the .xml.
-fileName = 'T:\Bioinformatics\modeling\models\Mycoplasma pneumoniae\iJW145_new.xml' ;
+fileName = 'T:\Bioinformatics\modeling\models\Mycoplasma pneumoniae\iJW145_new.xml';
 % fileName = ...
 % ['/home/jts/techdata/Bioinformatics/modeling/common/cobra' ...
-%     '/addModel/saves/iAF1260testoutput.xml'] ;
+%     '/addModel/saves/iAF1260testoutput.xml'];
 writeCbModel(Cspawn,'sbml',fileName)
 
 %% Test to see if model can be read back from SBML.
@@ -74,8 +82,8 @@ writeCbModel(Cspawn,'sbml',fileName)
 % that are in the .xml
 fileName = ...
 ['/home/jts/techdata/Bioinformatics/modeling/common/cobra' ...
-    '/addModel/saves/iAF1260testoutput.xml'] ;
-test = readCbModel(fileName) ;
+    '/addModel/saves/iAF1260testoutput.xml'];
+test = readCbModel(fileName);
 
 
 return

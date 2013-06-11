@@ -9,6 +9,9 @@ function Model = orderModelFields(Model)
 %
 %CALLS
 % TmodelFields
+%
+%CALLED BY      
+% verifyModel
 
 %% Order fields.
 % Get correct order. 

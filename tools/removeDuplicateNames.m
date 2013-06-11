@@ -12,6 +12,7 @@ function infoList = removeDuplicateNames(infoList)
 %
 %CALLED BY
 % cleanTmodel
+% verifyModel
 
 %% Get rid of those duplicates!
 for iInfo = 1:length(infoList)

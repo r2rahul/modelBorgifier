@@ -7,7 +7,10 @@ function Model = buildRxnEquations(Model)
 % Model     COBRA format model or Tmodel
 %
 %OUTPUTS
-% Model     Model with corrected rxnEquations field. 
+% Model     Model with corrected rxnEquations field.
+%
+%CALLED BY      
+% verifyModel
 
 
 %% If the function is fed Tmodel, use reaction bounds from first model.

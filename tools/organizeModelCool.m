@@ -14,6 +14,10 @@ function Model = organizeModelCool(Model)
 % 
 %CALLS
 % TmodelFields
+%
+%CALLED BY
+% verifyModel
+
 
 %% Declare variables for met.
 nMets = length(Model.mets) ;
@@ -25,8 +29,6 @@ metsNoComp = cell(nMets,1) ;
 for iMet = 1:nMets
     metsNoComp{iMet} = Model.mets{iMet}(1:end-3) ;
 end
-[~,indexFirst] = unique(metsNoComp,'first') ;
-[uniqMets,indexLast] = unique(metsNoComp,'last') ;
 
 %% Order metabolites
 % Sort by most promiscuous metabolites, grouping sisters.
@@ -41,16 +43,14 @@ while metPos <= nMets
 
     % Find sister metabolites.
     nowMetNameNoComp = Model.mets{maxIndex}(1:end-3) ;
-    noCompIndex = find(strcmp(nowMetNameNoComp,uniqMets)) ;
-    metStart = indexFirst(noCompIndex) ;
-    metEnd = indexLast(noCompIndex) ;
+    noCompIndex = find(strcmp(nowMetNameNoComp,metsNoComp)) ;
 
     % Add mets to future index.
-    for iMet = metStart:metEnd
-        metIndex(metPos) = iMet ; 
+    for iMet = 1:length(noCompIndex)
+        metIndex(metPos) = noCompIndex(iMet) ; 
         metPos = metPos + 1 ;
         % Take those mets out of the running. 
-        rxnCount(iMet) = -1 ; 
+        rxnCount(noCompIndex(iMet)) = -1 ; 
     end
 end
 
