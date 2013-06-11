@@ -31,9 +31,8 @@ function [Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,varargin)
 %NOTES
 % Use readCbModel to create a COBRA model from a SBML formatted .xml or an
 % appropriate scipt to create the model from an .xls or other format.
-% These other scripts can be found in
-% Bioinformatics/modeling/matlab/readmodel. Run script through verifyModel
-% to make sure that is has all the correct information for compareCbModels.
+% Run script through verifyModel to make sure that is has all the correct 
+% information for compareCbModels.
 %
 %Development Notes/To do
 % 23.11.12 Removed Global functionality. 
@@ -330,7 +329,7 @@ metType = {'I' 'N' 'F' 'K' 'S'} ;
 % Metabolite information category
 metCatH = {'metNameH' 'metNameH' 'metFormH' 'metKEGGH' 'metSEEDH'} ;
 metCatM = {'metNameM' 'metNameM' 'metFormM' 'metKEGGM' 'metSEEDM'} ;
-h = waitbar(0,'Processing reaction metabolit') ;
+h = waitbar(0,'Processing metabolites.') ;
 for i = 1:nCrxns
     % Allocate scoring arrays in a structure
     for iStack = 1:length(metType)

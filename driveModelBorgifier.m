@@ -1,9 +1,9 @@
-% driveAddModel walks through the process of comparing and merging models.
-% It is not meant to be used as a function, rather as a guide.
+% driveModelBorgifier walks through the process of comparing and merging 
+% models. It is not meant to be used as a function, rather as a guide.
 
 %% Load and verify Cmodel. (The Compare Model).
 if isunix
-    fileName = '/home/jts/projdata/Proj SMP/Primaerdaten/modeling/common/cobra/addModelgit/test/iBSU1103.xml';
+    fileName = '/test/iBSU1103.xml';
 else ispc
     fileName = '\test\iBSU1103.xml';
 end
@@ -31,9 +31,9 @@ end
 
 % Or use any model as the template model.
 if isunix
-    fileName = '/home/jts/projdata/Proj SMP/Primaerdaten/modeling/common/cobra/addModelgit/test/iJO1366.xml';
+    fileName = '/test/iJO1366.xml';
 else ispc
-    fileName = '\test\iBSU1466.xml';
+    fileName = '\test\iJO1366.xml';
 end
 
 % Load with regular COBRA function.
@@ -43,7 +43,7 @@ Tmodel = readCbModel(fileName);
 % proper format for comparison. Also make sure it carries flux. 
 if ~isfield(Tmodel,'Models')
     Tmodel = verifyModel(Tmodel);
-    TmodelSol = optimizeCbModel(Tmodel1); 
+    TmodelSol = optimizeCbModel(Tmodel); 
     Tmodel = buildTmodel(Tmodel); 
 end
 
@@ -51,7 +51,8 @@ end
 % Score Cmodel against Tmodel. 
 [Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,Tmodel);
 
-%% Match models. 
+%% Match models.
+
 % Initial comparison and matching.
 [rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score);
 
