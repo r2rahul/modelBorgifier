@@ -1,5 +1,5 @@
 function Tmodel = squishTmodel(Tmodel,varargin)
-%squishTmodel fixes Tmodel to look like one model, rathes than a
+%squishTmodel compresses Tmodel to look like one model, rathes than a
 % combination of othes models. 
 %
 % Tmodel = squishTmodel(Tmodel,modelName,revMethod)
@@ -9,7 +9,7 @@ function Tmodel = squishTmodel(Tmodel,varargin)
 %
 %OPTIONAL INPUTS
 % modelName     Indicate model to preference in term of reveribility,
-%               bounds, and objective function. Can
+%               bounds, and objective function.
 %
 %OUTPUTS
 % Tmodel
@@ -87,8 +87,5 @@ Tmodel.ub = ub ;
 Tmodel.c = c ;
 Tmodel.genes = genes ;
 
-
 Tmodel = buildRxnEquations(Tmodel) ;
-
-
 

@@ -1,6 +1,6 @@
 function Model = readCbTmodel(modelName,varargin)
-%readCbTmodel Creates COBRA format of a specific model from Tmodel (master
-% database).
+%readCbTmodel Creates COBRA format of a specific model from Tmodel 
+% (composition database).
 %
 %Model = readCbTmodel(modelName,[Tmodel])
 %
@@ -172,10 +172,9 @@ if isfield(Tmodel.Models.(modelName),'genes')
        [genesByRxn{iRxn},rules{iRxn}] = parseBoolean(Model.grRules{iRxn}); 
     end
 
-    % Construct gene to rxn mapping - Modified from code in 
-    % convertSBMLToCobra.m from COBRA toolbox.
+    % Construct gene to rxn mapping.
     rxnGeneMat = sparse(nRxns,length(allGenes)) ;
-    h = waitbar(0,'Constructing GPR mapping ...');
+    fprintf('building rxnGeneMat\n');
     for i = 1:nRxns
         if mod(i,10) == 0
             waitbar(i/nRxns,h);
@@ -196,10 +195,6 @@ if isfield(Tmodel.Models.(modelName),'genes')
         else
             rules{i} = '' ;
         end
-    end
-    % Close the waitbar if this is matlab
-    try
-        close(h);
     end
     
     % Put things in the model.

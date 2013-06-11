@@ -1,6 +1,6 @@
 function fields = TmodelFields(~)
 % TmodelFields returns the field names of the Tmodel structure. This is
-% help allievate control between different scripts.
+% to help allievate control between different scripts.
 %
 % [rxnFields,numField,metFields,allFields] = TmodelFields(~)
 %
