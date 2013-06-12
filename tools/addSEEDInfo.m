@@ -1,62 +1,111 @@
-function [Model] = addSEEDInfo(Model) 
+function Model = addSEEDInfo(Model,rxnFileName,cpdFileName) 
 % This function takes the compound and reaction database files from SEED
 % and compares them to a model, adding any additional information it can
 % find and checking to see if current information is in agreement with the
-% databases. It returns an augmented model. 
+% databases. It returns the augmented model. 
 %
 % 
 %INPUTS
-% Tmodel
+% Model         Model with SEED reaction and metabolite IDs
+% rxnFileName   rxn database as downloaded from the modelSEED in .csv
+%               with ; delimiters.
+% cpdFileName   cpd database as downloaded from the modelSEED in .csv
+%               with ; delimiters.
 %
 %OUTPUTS
-% Tmodel
-% Stats     Structure with relevant stats on what has been updated. 
-
-
-
-
+% Model     
+%
+%CALLS
+% csvimport
+% fixNames
+% removeDuplicateNames
+% fixChemFormulas
 
 
 %% Declare variables.
-% Compound database filename. 
-cpdFileName = ('/modeling/models/seed/ModelSEED-compound-db.csv') ; 
-% Reaction database filename. 
-rxnFileName = ('/modeling/models/seed/ModelSEED-reaction-db.csv') ; 
+% Load reaction and metabolite files into cell arrays.
+% Note: csvimport does not like for the file to be open anywhere else.
+rxnDb = csvimport(rxnFileName,'delimiter',';');
+cpdDb = csvimport(cpdFileName,'delimiter',';'); 
 
+% Clean up names. 
+cpdDb(:,3) = fixNames(cpdDb(:,3)); % Abbreviations.
+cpdDb(:,4) = fixNames(cpdDb(:,4)); % Names.
+cpdDb(:,6) = fixChemFormulas(cpdDb(:,6)); % Chem formulas.
 
+% Remove starting and trailing pipes from EC Numbers.
+rxnDb(:,3) = regexprep(rxnDb(:,3),'^\|',''); 
+rxnDb(:,3) = regexprep(rxnDb(:,3),'\|$','');
 
+% Reaction and metabolite information to be added to. 
+rxnFields = {'rxnNames','rxnECNumbers','rxnKEGGID'};
+metFields = {'metNames','metFormulas','metKEGGID'};
 
+% Corresponding data column locations.
+rxnDataCol = [2,3,4];
+metDataCol = [4,6,5];
 
-%% Compare Tmodel metabolites to metabolite database.
+%% Reactions
+% Which reactions have SEEDIDs.
+withRxnSEED = find(~cellfun(@isempty,Model.rxnSEEDID));
 
-% Check metabolites in T with a SEED ID, and then see if these metabolites
-% already have the information available from the database. Add info if it
-% does not, throw flag if the information is different. 
+% Compare individual IDs agianst database. 
+for iRxn = 1:length(withRxnSEED)
+    matchPos = find(strcmp(Model.rxns{withRxnSEED(iRxn)},rxnDb(:,1))) ; 
+    if ~isempty(matchPos) == 1 && length(matchPos) == 1
+        % Add information from database 
+        for iField = 1:length(rxnFields)
+            Model.(rxnFields{iField}){withRxnSEED(iRxn)} = ...
+                [Model.(rxnFields{iField}){withRxnSEED(iRxn)} '|' ...
+                 rxnDb{matchPos,rxnDataCol(iField)}];
+        end
+    end
+end
 
+% Remove leading and lone pipes and duplicates.
+for iField = 1:length(rxnFields)
+    Model.(rxnFields{iField}) = regexprep(Model.(rxnFields{iField}), ...
+                                          '^|','');
+    Model.(rxnFields{iField}) = ...
+        removeDuplicateNames(Model.(rxnFields{iField})); 
+end                                     
 
-% Now use KEGGIDs and an anchor point for moving in information.
-% Exclude metabolites that have SEEDIDs (these should have been convered
-% above)
+%% Metabolites.
+% Which reactions have SEEDIDs.
+withMetSEED = find(~cellfun(@isempty,Model.metSEEDID));
 
+% Compare individual IDs agianst database. 
+for iMet = 1:length(withMetSEED)
+    matchPos = find(strcmp(Model.metSEEDID{withMetSEED(iMet)},cpdDb(:,1))); 
+    if ~isempty(matchPos) == 1 && length(matchPos) == 1
+        % Add information from database 
+        for iField = 1:length(metFields)
+            Model.(metFields{iField}){withMetSEED(iMet)} = ...
+                [Model.(metFields{iField}){withMetSEED(iMet)} '|' ...
+                 cpdDb{matchPos,metDataCol(iField)}];
+            % Replace .mets with abbreviations from db, retain compound.
+            Model.mets{withMetSEED(iMet)} = [cpdDb{matchPos,3} ...
+                Model.mets{withMetSEED(iMet)}(end-2:end)];
+        end
+    end
+end
 
-% Repeat, using names (not sure which comparison, or series of comparisons,
-% is most appropriate here).
+% Remove leading and lone pipes and duplicates.
+for iField = 1:length(metFields)
+    Model.(metFields{iField}) = regexprep(Model.(metFields{iField}), ...
+                                          '^|','');
+    Model.(metFields{iField}) = ...
+        removeDuplicateNames(Model.(metFields{iField})); 
+end
 
+% Make sure .mets are unique, use as ID. 
+fprintf('Checking if metabolite IDs (.mets) are unique.\n');
+if length(Model.mets) ~= length(unique(Model.mets))
+    fprintf('ERROR: Not all metabolites are unique.\n')
+    Model.mets = makeNamesUnique(Model.mets,Model.metNames); 
+end
+Model.metID = Model.mets ; 
 
-% Replace compounds in Tmodel that use the SEED cpdXXXXX name with the 
-% abbreviations from the database. 
-
-
-
-%% Compare Tmodel reactions to reaction database. 
-
-% Check reactions from Tmodel that have SEEDIDs, fill in information from
-% database if it is not already present. Flag what is differnt. 
-
-
-% Do the same, but using KEGGIDs as the anchor. 
-
-
-% Replace the reactions in Tmodel which use the SEED rxnXXXXX name with the
-% abbreviatios from the database. 
+% Rebuild reaction equations.
+Model = buildRxnEquations(Model) ; 
 

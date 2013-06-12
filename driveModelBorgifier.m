@@ -8,6 +8,9 @@ else ispc
     fileName = '\test\iBSU1103.xml';
 end
 
+fileName = ['/home/jts/projdata/Proj SMP/Primaerdaten/modeling/' ...
+            'common/cobra/addModelgit/test/iBSU1103.xml'] ; 
+
 % Load with regular COBRA function.
 Cmodel = readCbModel(fileName);
 
@@ -17,6 +20,18 @@ Cmodel = readCbModel(fileName);
 % Verify model is ready for subsequent scripts. 
 Cmodel = verifyModel(Cmodel);
 
+% If model has SEED Identifiers, use the databases to fill in information.
+% Reaction database filename. 
+rxnFileName = ...
+    ['/home/jts/projdata/Proj SMP/Primaerdaten/modeling/common/cobra/' ...
+     '/addModelgit/test/SEED_db/ModelSEED-reactions-db.csv']; 
+% Compound database filename. 
+cpdFileName = ...
+    ['/home/jts/projdata/Proj SMP/Primaerdaten/modeling/common/cobra/' ...
+     '/addModelgit/test/SEED_db/ModelSEED-compounds-db.csv'];
+
+Cmodel = addSEEDInfo(Cmodel,rxnFileName,cpdFileName); 
+ 
 % Now is a good time to see if this model carries flux. OPTIONAL.
 solverOkay = changeCobraSolver('glpk','LP'); 
 CmodelSol = optimizeCbModel(Cmodel); 
@@ -35,6 +50,9 @@ if isunix
 else ispc
     fileName = '\test\iJO1366.xml';
 end
+
+fileName = ['/home/jts/projdata/Proj SMP/Primaerdaten/modeling/' ...
+            'common/cobra/addModelgit/test/iJO1366.xml'] ; 
 
 % Load with regular COBRA function.
 Tmodel = readCbModel(fileName);

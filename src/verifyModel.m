@@ -177,10 +177,23 @@ end
 Model.rxnID = Model.rxns ;
 Model.metID = Model.mets ;
 
+%% If model has SEED style reaction or metabolite IDs, add them to arrays.
+% Reactions.
+areSEEDids = ~cellfun(@isempty,regexp(Model.rxns,'^rxn\d{5}$')); 
+Model.rxnSEEDID(areSEEDids) = Model.rxns(areSEEDids);
+
+% Metabolites.
+noComp = Model.mets;
+for iMet = 1:length(noComp)
+    noComp{iMet} = noComp{iMet}(1:end-3);
+end
+areSEEDids = ~cellfun(@isempty,regexp(noComp,'^cpd\d{5}$')); 
+Model.metSEEDID(areSEEDids) = noComp(areSEEDids);
+
 %% Format chemical formulas
 Model.metFormulas = fixChemFormulas(Model.metFormulas);
 
-%% Rebuild reaction equations to ensure they use fixed names. 
+%% Rebuild reaction equations to ensure they use fixed names/abbreviations. 
 Model = buildRxnEquations(Model); 
 
 %% Ensure all vectors are column vectors.

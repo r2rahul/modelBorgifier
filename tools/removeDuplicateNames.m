@@ -1,7 +1,7 @@
 function infoList = removeDuplicateNames(infoList)
 %removeDuplicateNames accepts a cell array of strings, with info seperated
 % by a '|' within each cell, and removes the duplicate names in each cell. 
-% Also orders the names in size from smallest to largest. Best used after 
+% Also orders the names by size from smallest to largest. Best used after 
 % fixNames.
 %
 %INPUTS
