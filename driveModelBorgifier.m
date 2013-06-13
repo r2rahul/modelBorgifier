@@ -1,7 +1,8 @@
 % driveModelBorgifier walks through the process of comparing and merging 
 % models. It is not meant to be used as a function, rather as a guide.
+% Please reference the manual.
 
-%% Load and verify Cmodel. (The Compare Model).
+%% 1.1 Load and verify Cmodel. (The Compare Model).
 if isunix
     fileName = '/test/iBSU1103.xml';
 else ispc
@@ -15,7 +16,7 @@ fileName = ['/home/jts/projdata/Proj SMP/Primaerdaten/modeling/' ...
 Cmodel = readCbModel(fileName);
 
 % Or with custom written script. 
-% Cmodel = readModel_xxxx(fileName);
+Cmodel = readModel_xxxx(fileName);
 
 % Verify model is ready for subsequent scripts. 
 Cmodel = verifyModel(Cmodel);
