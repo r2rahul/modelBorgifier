@@ -226,15 +226,6 @@ for cRxn = 1:cRxns
        Tmodel.rxnID{tRxn} = strcat(Tmodel.rxnID{tRxn},cNameAdd, ...
            Cmodel.rxnID{cRxn}) ;
    end
-
-   % Add in additional model IDs (specific for iBSU1103)
-   if strcmp(cName,'iBSU1103')
-      if ~isempty(Cmodel.rxnModelID{cRxn})
-          Tmodel.rxnID{tRxn} = ...
-              strcat(Tmodel.rxnID{tRxn}, '|', ...
-                     Cmodel.rxnModelID{cRxn}) ;
-      end
-   end
    
    % Fill in information arrays for all reactions. This loop ensures that
    % only new information is being added. 
@@ -318,14 +309,6 @@ for cMet = 1:cMets
                                     Cmodel.metID{cMet}) ;
     end
     
-    % Add additional model met IDs (only for iBSU1103).
-    if strcmp(cName,'iBSU1103')
-        if ~isempty(Cmodel.metModelID{cMet})
-            Tmodel.metID{tMet} = strcat(Tmodel.metID{tMet}, ...
-                '|',Cmodel.metModelID{cMet});
-        end
-    end
-
     for iField = 1:length(metFieldNames)
         % Declare the current info now, makes code cleaner.
         Cinfo = Cmodel.(metFieldNames{iField}){cMet} ;

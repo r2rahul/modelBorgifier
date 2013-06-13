@@ -223,7 +223,7 @@ function pushbutton_new_Callback(hObject, eventdata, handles)
 if handles.rxnList(handles.cRxn) == -1 || ...
         handles.rxnList(handles.cRxn) == 0
     handles.rxnList(handles.cRxn) = 0 ;
-    set(handles.text_error,'String','Alles Klar') ;
+    set(handles.text_error,'String','Alles Klar (All Clear)') ;
     
     % Compare metabolites from reaction.
     handles.metList = prepareMetCompare(handles)  ; 

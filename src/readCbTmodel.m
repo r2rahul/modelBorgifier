@@ -176,9 +176,6 @@ if isfield(Tmodel.Models.(modelName),'genes')
     rxnGeneMat = sparse(nRxns,length(allGenes)) ;
     fprintf('building rxnGeneMat\n');
     for i = 1:nRxns
-        if mod(i,10) == 0
-            waitbar(i/nRxns,h);
-        end
         if iscell(genesByRxn{i})
             [~,geneInd] = ismember(genesByRxn{i},allGenes);
         else

@@ -544,7 +544,7 @@ if RxnInfo.rxnIndex
     % Set addReaction button off, then check if all the mets in the 
     % reaction have good matches, then allowing the user to add the 
     % reaction. Also, check for errors.
-    errorString = 'Es gibt noch was zu tun' ;
+    errorString = 'Es gibt noch was zu tun. (Review required)' ;
     bgcolor = [0.7 0.7 0.7] ;
     % All metabolites must be good matches and new metabolites must be
     % reviewed.
