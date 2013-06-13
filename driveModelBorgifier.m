@@ -71,9 +71,11 @@ end
 [Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,Tmodel);
 
 %% Match models.
-
 % Initial comparison and matching.
 [rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score);
+
+% OPTIONAL. Declare mets from Cmodel with comps not in Tmodel as new.
+metList1 = newCompsNewMets(metList,Cmodel,Tmodel);
 
 % Subsequent comparisons and matching. 
 [rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score, ...
@@ -81,7 +83,7 @@ end
 
 %% Merge models and test results.
 [TmodelC,Cspawn,Stats1] = evaluateTmodel(Cmodel,Tmodel, ...
-                                        rxnList,metList,Stats);
+                                         rxnList,metList,Stats);
 
 %% Extract a model. 
 modelToExtract = 'iJW145';%'iAF1260';

@@ -12,7 +12,7 @@ function metScores = compareAllMets(Cmodel,Tmodel)
 % metScoreMatrix
 %
 %CALLED BY
-% 
+%
 %DEVELOPMENT NOTES/TO DO
 %
 
