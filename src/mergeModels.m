@@ -1,16 +1,16 @@
-function [TmodelC,Cspawn,Stats] = evaluateTmodel(CmodelIn,TmodelIn, ...
+function [TmodelC,Cspawn,Stats] = mergeModels(CmodelIn,TmodelIn, ...
                                                  rxnList,metList,Stats)
-% evaluateTmodel checks Tmodel for duplicate reactions and other mistakes,
+% mergeModels checks Tmodel for duplicate reactions and other mistakes,
 % that may have occured during reaction and metabolite matching. It
 % resolves these problems and merges the models, and confirms that Cmodel
 % is the same after being removed from the merged model. It also provides 
 % some statistics on the merging process and resulting combined model.
 %
-% [TmodelC,Cspawn,Stats] = evaluateTmodel(CmodelIn,TmodelIn, ...
+% [TmodelC,Cspawn,Stats] = mergeModels(CmodelIn,TmodelIn, ...
 %                                         rxnList,metList,Stats)
 %
 %INPUT
-% Cmodel    
+% Cmodel
 % Tmodel
 % rxnList
 % metList

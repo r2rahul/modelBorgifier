@@ -1,19 +1,16 @@
 % driveModelBorgifier walks through the process of comparing and merging 
 % models. It is not meant to be used as a function, rather as a guide.
-% Please reference the manual.
+% Please reference the manual and the help information in the individual 
+% scripts for additional information.
 
-%% 1.1 Load and verify Cmodel. (The Compare Model).
+%% Load and verify Cmodel. (The Compare Model).
+% Load with regular COBRA function.
 if isunix
     fileName = '/test/iBSU1103.xml';
 else ispc
     fileName = '\test\iBSU1103.xml';
 end
-
-fileName = ['/home/jts/projdata/Proj SMP/Primaerdaten/modeling/' ...
-            'common/cobra/addModelgit/test/iBSU1103.xml'] ; 
-
-% Load with regular COBRA function.
-Cmodel = readCbModel(fileName);
+Cmodel = readCbModel(fileName); 
 
 % Or with custom written script. 
 Cmodel = readModel_xxxx(fileName);
@@ -21,16 +18,9 @@ Cmodel = readModel_xxxx(fileName);
 % Verify model is ready for subsequent scripts. 
 Cmodel = verifyModel(Cmodel);
 
-% If model has SEED Identifiers, use the databases to fill in information.
-% Reaction database filename. 
-rxnFileName = ...
-    ['/home/jts/projdata/Proj SMP/Primaerdaten/modeling/common/cobra/' ...
-     '/addModelgit/test/SEED_db/ModelSEED-reactions-db.csv']; 
-% Compound database filename. 
-cpdFileName = ...
-    ['/home/jts/projdata/Proj SMP/Primaerdaten/modeling/common/cobra/' ...
-     '/addModelgit/test/SEED_db/ModelSEED-compounds-db.csv'];
-
+% If model has SEED IDs, use the databases to fill in information.
+rxnFileName = '/addModelgit/test/SEED_db/ModelSEED-reactions-db.csv'; 
+cpdFileName = '/addModelgit/test/SEED_db/ModelSEED-compounds-db.csv';
 Cmodel = addSEEDInfo(Cmodel,rxnFileName,cpdFileName); 
  
 % Now is a good time to see if this model carries flux. OPTIONAL.
@@ -52,9 +42,6 @@ else ispc
     fileName = '\test\iJO1366.xml';
 end
 
-fileName = ['/home/jts/projdata/Proj SMP/Primaerdaten/modeling/' ...
-            'common/cobra/addModelgit/test/iJO1366.xml'] ; 
-
 % Load with regular COBRA function.
 Tmodel = readCbModel(fileName);
 
@@ -67,7 +54,7 @@ if ~isfield(Tmodel,'Models')
 end
 
 %% Compare models. 
-% Score Cmodel against Tmodel. 
+% Score Cmodel against Tmodel. This can taken a few hours. 
 [Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,Tmodel);
 
 %% Match models.
@@ -102,7 +89,6 @@ writeCbModel(Cspawn,'sbml')
 % that are in the .xml
 fileName = '/saves/testoutput.xml'];
 test = readCbModel(fileName);
-
 
 %% save new Tmodel
 Tmodel = TmodelC ;
