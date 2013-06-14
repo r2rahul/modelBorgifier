@@ -62,40 +62,36 @@ end
 [rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score);
 
 % OPTIONAL. Declare mets from Cmodel with comps not in Tmodel as new.
-metList1 = newCompsNewMets(metList,Cmodel,Tmodel);
+metList = newCompsNewMets(metList,Cmodel,Tmodel);
 
 % Subsequent comparisons and matching. 
 [rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score, ...
                                           rxnList,metList,Stats);
 
 %% Merge models and test results.
-[TmodelC,Cspawn,Stats1] = evaluateTmodel(Cmodel,Tmodel, ...
-                                         rxnList,metList,Stats);
+[TmodelC,Cspawn,Stats] = mergeModels(Cmodel,Tmodel, ...
+                                      rxnList,metList,Stats);
 
 %% Extract a model. 
-modelToExtract = 'iJO1366';
+modelToExtract = 'iJO1366'; % Note this name must match the name in Tmodel.
 Cspawn = readCbTmodel(modelToExtract,TmodelC); 
 
 %% Write to SBML. 
-% You will be prompted with a dialoge box for the file name, or you can
-% enter it after 'sbml'. This version of writeCbModel does write all the 
-% additional information to the .xml.
-
-fileName = 'model.xml';
-writeCbModel(Cspawn,'sbml')
+% This version of writeCbModel does not write all the additional 
+% information to the .xml.
+fileName = '/test_output.xml';
+writeCbModel(Cspawn,'sbml',fileName)
 
 %% Test to see if model can be read back from SBML.
-% Note that the readCbModel function doesn't deal with the extra fields 
-% that are in the .xml
-fileName = '/saves/testoutput.xml'];
+% Note that the readCbModel function doesn't deal with the extra fields if
+% they are in the .xml
+fileName = '/saves/testoutput.xml';
 test = readCbModel(fileName);
 
-%% save new Tmodel
+%% Save new Tmodel as .mat file. 
 Tmodel = TmodelC ;
 if isunix
-    save('/models/Tmodel.mat','Tmodel')
-    save(['/models/Tmodel_' datestr(now,'yyyy.mm.dd') '.mat'],'Tmodel')
+    save(['/Tmodel_' datestr(now,'yyyy.mm.dd') '.mat'],'Tmodel')
 elseif ispc
-    save('t:\Bioinformatics\modeling\models\Tmodel.mat','Tmodel')
-    save(['t:\Bioinformatics\modeling\models\Tmodel_' datestr(now,'yyyy.mm.dd') '.mat'],'Tmodel')
+    save(['\Tmodel_' datestr(now,'yyyy.mm.dd') '.mat'],'Tmodel')
 end

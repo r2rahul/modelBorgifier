@@ -1,5 +1,5 @@
 function [TmodelC,Cspawn,Stats] = mergeModels(CmodelIn,TmodelIn, ...
-                                                 rxnList,metList,Stats)
+                                              rxnList,metList,Stats)
 % mergeModels checks Tmodel for duplicate reactions and other mistakes,
 % that may have occured during reaction and metabolite matching. It
 % resolves these problems and merges the models, and confirms that Cmodel
@@ -24,7 +24,10 @@ function [TmodelC,Cspawn,Stats] = mergeModels(CmodelIn,TmodelIn, ...
 %           on the combined model.
 %
 %CALLS
+% addToTmodel
+% readCbTmodel
 % TmodelStats
+% optimizeCbModel
 
 %% Declare variables. 
 global CMODEL TMODEL
@@ -135,7 +138,6 @@ end
     end
 
 %% Checking flux calculations.
-
 % Are objective functions the same?
 if ~(find(CMODEL.c(FluxCompare.CrxnsSorti)) == ...
         find(Cspawn.c(FluxCompare.SrxnsSorti)))
