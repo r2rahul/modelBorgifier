@@ -179,7 +179,7 @@ Stats.scoreTotal = scoreTotal ;
 function [scoreTotal,Stats] = colapseScore(scoreWeighted)
 global TMODEL CMODEL
 
-% Compute total scores from subscores. If colapse SCORE is fed an already
+% Compute total scores from subscores. If colapseScore is fed an already
 % summed SCORE matrix as an argument, this function is impotent.
 scoreTotal = sum(scoreWeighted,3) ;
 clear scoreWeighted 
