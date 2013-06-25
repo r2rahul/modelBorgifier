@@ -10,7 +10,8 @@ function Tmodel = squishTmodel(Tmodel,varargin)
 %OPTIONAL INPUTS
 % modelName     Indicate model to preference in term of reveribility,
 %               bounds, and objective function.
-%
+% revMethod     Indicates how reaction reversibility should be
+%               decided. See switchcase below.
 %OUTPUTS
 % Tmodel
 
