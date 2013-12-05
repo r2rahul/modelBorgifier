@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
 function varargout = reactionCompareGUI(varargin)
 %reactionCompareGUI Lauches a GUI compare reactions visually. After each
 % reaction is declared, metabolites for that reaction are are also matched.
@@ -51,7 +66,7 @@ else
 end
 end
 % End initialization code - DO NOT EDIT
-
+% 
 % --- Executes just before reactionCompareGUI is made visible.
 function reactionCompareGUI_OpeningFcn(hObject,eventdata,handles,varargin)
 % Choose default command line output for reactionCompareGUI
@@ -104,9 +119,19 @@ set(handles.uitable_matchrxn,'CellSelectionCallback',{@matchRxnCallback,...
                                                       handles})
 set(handles.uitable_rxn,'CellSelectionCallback',{@rxnTableCallback,...
                                                       handles})
+
+% fix RowName of metabolite reference table
+metRowHeaders = get(handles.uitable_met,'RowName') ;
+set(handles.uitable_met,'RowName', metRowHeaders(1:end-1)) ;
+
                                 
 % Update handles structure
 guidata(hObject, handles);
+
+jButton = findjobj(handles.pushbutton_sponsoredbybrain);
+jButton.setCursor(java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+jButton.setBorder([]); % remove border
+jButton.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT); % align text
 
 % UIWAIT makes reactionCompareGUI wait for user response (see UIRESUME)
 uiwait(handles.figure1);
@@ -140,13 +165,18 @@ fillTables(handles)
 
 % resize Row headers uitable_rxn
 jscroll=findjobj(handles.uitable_rxn) ;
-rowHeaderViewport=jscroll.getComponent(4) ; 
-rowHeader=rowHeaderViewport.getComponent(0);
+rowHeaderViewport=jscroll.getComponent(4) ; %row header viewport
+rowHeader=rowHeaderViewport.getComponent(0); %row header table
 newWidth = 125 ;
 rowHeaderViewport.setPreferredSize(java.awt.Dimension(newWidth,0));
 height=rowHeader.getHeight;
 rowHeader.setPreferredSize(java.awt.Dimension(newWidth,height));
 rowHeader.setSize(newWidth,height); 
+% realign header:
+rend=rowHeader.getCellRenderer(1,0);
+rend.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+jscroll.repaint %apply changes 
+
 % resize Row headers uitable_met
 jscroll=findjobj(handles.uitable_met) ;
 rowHeaderViewport=jscroll.getComponent(4) ; 
@@ -156,6 +186,10 @@ rowHeaderViewport.setPreferredSize(java.awt.Dimension(newWidth,0));
 height=rowHeader.getHeight;
 rowHeader.setPreferredSize(java.awt.Dimension(newWidth,height));
 rowHeader.setSize(newWidth,height); 
+% realign header:
+rend=rowHeader.getCellRenderer(1,0);
+rend.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+jscroll.repaint %apply changes 
 
 % Update handles structure.
 guidata(hObject, handles) ;
@@ -186,23 +220,29 @@ end
 
 % --- Executes on button press in pushbutton_choose.
 function pushbutton_choose_Callback(hObject, eventdata, handles)
+global CMODEL
 % Update rxnList.
 selectedRxn = str2double(get(handles.edit_select_match,'String')) ;
 if ~isnan(selectedRxn)
     % If the reaction has not already been declared. 
     if isempty(find(handles.rxnList == selectedRxn,1))
-        handles.rxnList(handles.cRxn) = selectedRxn ;
-        set(handles.text_error,'String','Alles Klar') ;
-        
         % Compare metabolites from reaction.
         handles.metList = prepareMetCompare(handles) ; 
         
-        % Recompute stats (pie chart).    
-        fillStats(handles)
-        set(handles.edit_select_match,'String','') ;
-        
-        % Move to the next reaction.
-        handles = pushbutton_nextNewRxn_Callback(hObject,eventdata,handles);
+        % check that none of the metabolites of the reaction has been declared new
+        if sum(handles.metList(CMODEL.S(:,handles.cRxn) ~= 0) == 0) > 0
+            set(handles.text_error,'String','Rxn cannot be matched, it contains unmatched metabolites') ;
+        else
+            handles.rxnList(handles.cRxn) = selectedRxn ;
+            set(handles.text_error,'String','Alles Klar') ;
+            
+            % Recompute stats (pie chart).
+            fillStats(handles)
+            set(handles.edit_select_match,'String','') ;
+            
+            % Move to the next reaction.
+            handles = pushbutton_nextNewRxn_Callback(hObject,eventdata,handles);  
+        end
     else
         errorString = ['ERROR: tRxn ' num2str(selectedRxn) ...
                        ' already assigned to cRxn ' ...
@@ -269,7 +309,6 @@ metLowCutoff = str2double(get(handles.edit_metmatch_low,'String')) ;
                        handles.rxnList, handles.metList, ...
                        cutoffMatch,margin,cutoffNew,...
                        metHighCutoff,metMargin,metLowCutoff) ;
-
                    
 % Update graphs
 fillStats(handles)
@@ -309,7 +348,9 @@ else
     handles.M.scoreTotal = handles.M.Stats.scoreTotal ;
 end
 set(h,'Enable','on') 
-pushbutton_auto_Callback(handles.pushbutton_auto, eventdata, handles)
+fillStats(handles)
+% Update handles
+guidata(hObject, handles)
 end
 
 % --- Executes on button press in pushbutton_optFun.
@@ -322,7 +363,9 @@ set(h,'Enable','off')
               
 handles.M.scoreTotal = handles.M.Stats.scoreTotal ;
 set(h,'Enable','on') 
-pushbutton_auto_Callback(handles.pushbutton_auto, eventdata, handles)
+fillStats(handles)
+% Update handles
+guidata(hObject, handles)
 end
 
 % --- Executes on button press in pushbutton_expopt.
@@ -337,7 +380,8 @@ handles.M.scoreTotal = handles.M.Stats.scoreTotal ;
 
 fillStats(handles)
 set(h,'Enable','on') 
-pushbutton_auto_Callback(handles.pushbutton_auto, eventdata, handles)
+% Update handles
+guidata(hObject, handles)
 end
 
 % --- Executes on button press in pushbutton_reviewMets.
@@ -388,7 +432,6 @@ if exist('rxnsWithUnmatchedMets','var')
         [handles.metList,stopFlag] = metCompare(RxnInfo) ;
         waitbar(iRxn/length(rxnsWithUnmatchedMets),hWait)
         
-        
         % If metCompare was suspended, don't attempt to find matches for the
         % reamining reactions.
         if stopFlag
@@ -418,14 +461,18 @@ if ~isempty(eventdata.Indices)
     
     % Set match reaction number based on column clicked. 
     matchColumn = eventdata.Indices(2) ; 
-    [~, I] = sort(handles.M.scoreTotal(handles.cRxn,:),'descend') ;
-    set(handles.edit_select_match,'String',num2str(I(matchColumn))) 
+    matchTable = get(handles.uitable_matchrxn,'Data') ;
+    nowMatchIndex = matchTable{1,matchColumn} ;
+    nowMatchIndex = nowMatchIndex(strfind(nowMatchIndex,';')+1:end) ;
+    set(handles.edit_select_match,'String',nowMatchIndex) 
     
     % Pull out match data for following checks. 
+    handles.nMatch = str2double(get(handles.edit_num_matches,'String')) ;
+    if isnan(handles.nMatch) ; handles.nMatch = 2 ; end
     Data = findRxnMatch(handles.cRxn,handles.nMatch,handles.M.scoreTotal) ;
     
     % Check if compartments are the same.
-    if strcmp(CMODEL.rxnComp{handles.cRxn},TMODEL.rxnComp{I(matchColumn)})
+    if strcmp(CMODEL.rxnComp{handles.cRxn},TMODEL.rxnComp{str2double(nowMatchIndex)})
         set(handles.text_compartment,'BackgroundColor',[0 0.2 1])
     else
         set(handles.text_compartment,'BackgroundColor',[1 0 0])
@@ -442,25 +489,33 @@ if ~isempty(eventdata.Indices)
         set(handles.text_stoich,'BackgroundColor',[1 0 0])
     end
     
-    % Check carbon balance.
-    cNum = [0 0 0 0] ;
-    % C reactants.
-    cNum(1) = CsInFormula(Data.cMetTable{5,1},Data.cMetTable{4,1}) ;
-    % T reactants.
-    cNum(2) = CsInFormula(Data.tMetTable{5,matchColumn}, ...
-                          Data.tMetTable{4,matchColumn}) ;
-    % C products.                  
-    cNum(3) = CsInFormula(Data.cMetTable{12,1},Data.cMetTable{11,1}) ;
-    % T products.
-    cNum(4) = CsInFormula(Data.tMetTable{12,matchColumn}, ...
-                          Data.tMetTable{11,matchColumn}) ;
-    % Remove NaN's (in case of exchange reaction).
-    cNum(isnan(cNum)) = [] ;
-    % Set color according to match or not. All values should be the same.
-    if length(unique(cNum)) == 1  
-        set(handles.text_cbalance,'BackgroundColor',[0 0.2 1])
+    % check if sum formulas are present for all reactants
+    if ~(formulasPresentCheck(Data.cMetTable{5,1}) && ...
+            formulasPresentCheck(Data.tMetTable{5,matchColumn}) && ...
+            formulasPresentCheck(Data.cMetTable{12,1}) && ...
+            formulasPresentCheck(Data.tMetTable{12,matchColumn}))
+        set(handles.text_cbalance,'BackgroundColor',[1 1 1])
     else
-        set(handles.text_cbalance,'BackgroundColor',[1 0 0])
+        % Check carbon balance.
+        cNum = [0 0 0 0] ;
+        % C reactants.
+        cNum(1) = CsInFormula(Data.cMetTable{5,1},Data.cMetTable{4,1}) ;
+        % T reactants.
+        cNum(2) = CsInFormula(Data.tMetTable{5,matchColumn}, ...
+            Data.tMetTable{4,matchColumn}) ;
+        % C products.
+        cNum(3) = CsInFormula(Data.cMetTable{12,1},Data.cMetTable{11,1}) ;
+        % T products.
+        cNum(4) = CsInFormula(Data.tMetTable{12,matchColumn}, ...
+            Data.tMetTable{11,matchColumn}) ;
+        % Remove NaN's (in case of exchange reaction).
+        cNum(isnan(cNum)) = [] ;
+        % Set color according to match or not. All values should be the same.
+        if length(unique(cNum)) == 1
+            set(handles.text_cbalance,'BackgroundColor',[0 0.2 1])
+        else
+            set(handles.text_cbalance,'BackgroundColor',[1 0 0])
+        end
     end
     
     % Opens up KEGG ID site if KEGGID is selected
@@ -478,18 +533,6 @@ if ~isempty(eventdata.Indices)
     end      
 end
     
-    % Nested function for counting carbons.
-    function Cs = CsInFormula(formulaString,stoicString)
-        Cs = 0 ;
-        scPos = [0 strfind(formulaString,';') length(formulaString)+1] ;
-        scPosS = [0 strfind(stoicString,';') length(stoicString)+1] ;
-        for isc = 1:length(scPos)-1
-            nowSubstring = formulaString(scPos(isc)+1:scPos(isc+1)-1) ;
-            stoic = abs(str2double(stoicString( ...
-                                   scPosS(isc)+1:scPosS(isc+1)-1))) ;
-            Cs = Cs + stoic * countC(nowSubstring) ;
-        end
-    end
 end
 
 % --- Executes on selection of item in uitable_rxn
@@ -520,14 +563,11 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 uiresume(handles.figure1)
 end
 
-% --- Executes on button press in pushbutton_logo.
-function pushbutton_logo_Callback(hObject, eventdata, handles)
-end
-
 function slider_minscore_Callback(hObject, eventdata, handles)
 
 set(handles.text_slidervalue,'String', num2str(get(hObject,'Value')))
 end
+
 
 %% Subfunctions
 function fillTables(handles)
@@ -535,12 +575,33 @@ function fillTables(handles)
 Data = findRxnMatch(handles.cRxn,handles.nMatch,handles.M.scoreTotal) ;
 
 % Put information into the 4 tables. 
-set(handles.uitable_rxn,'Data', ...
-    Data.cRxnTable ) ; % (2:length(Data.cRxnTable)))
-set(handles.uitable_met,'Data', ...
-    Data.cMetTable([2 3 5 6 7 9 10 12 13 14]))
-set(handles.uitable_matchMet,'Data', ...
-    Data.tMetTable([2 3 5 6 7 9 10 12 13 14],:))
+nowtable = Data.cRxnTable ;
+for ic = 1:size(nowtable,2)
+    for ir = 1:size(nowtable,1)
+        % add leading whitespace to all cells
+        nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
+    end
+end
+set(handles.uitable_rxn,'Data', nowtable ) ;
+
+nowtable = Data.cMetTable([2 3 5 6 7 9 10 12 13 14]) ;
+for ic = 1:size(nowtable,2)
+    for ir = 1:size(nowtable,1)
+        % add leading whitespace to all cells
+        nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
+    end
+end
+set(handles.uitable_met,'Data', nowtable )
+
+nowtable = Data.tMetTable([2 3 5 6 7 9 10 12 13 14],:) ;
+for ic = 1:size(nowtable,2)
+    for ir = 1:size(nowtable,1)
+        % add leading whitespace to all cells
+        nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
+    end
+end
+set(handles.uitable_matchMet,'Data', nowtable)
+
 
 ctable = Data.cRxnTable(2:length(Data.cRxnTable)) ;
 colOptions = {'blue', 'red'} ;
@@ -548,13 +609,20 @@ nowtable = Data.tRxnTable ;
                        
 % Color the information in the table based on if it matches.
 for ic = 1:size(nowtable,2)
-    for ir = 2:size(nowtable,1)
-        if ~isempty(nowtable{ir,ic}) && ~isempty(ctable{ir-1,1}) && ir ~= 4
-            nowtable{ir,ic} = colText(nowtable{ir,ic},colOptions{ ...
-                1+isempty(strfind(nowtable{ir,ic}, ctable{ir-1,1}))}) ;
+    for ir = 1:size(nowtable,1)
+        if ir == 1 
+            % add leading whitespace to all cells
+            nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
+        elseif ~isempty(nowtable{ir,ic}) && ~isempty(ctable{ir-1,1}) && (ir ~= 4)
+            nowtable{ir,ic} = colText(['&nbsp; ' nowtable{ir,ic}], ...
+            colOptions{ 1+isempty(strfind(nowtable{ir,ic}, ctable{ir-1,1}))}) ;
+        else
+            % add leading whitespace to all cells
+            nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
         end
     end
 end
+
 set(handles.uitable_matchrxn,'Data',nowtable)
 set(handles.text_compartment,'BackgroundColor',[1 1 1])
 set(handles.text_stoich,'BackgroundColor',[1 1 1])
@@ -583,8 +651,6 @@ rxnString = [num2str(length(find(rxnList >= 0))) ' / ' ...
              num2str(length(rxnList))] ;
 metString = [num2str(length(find(metList))) ' / ' ...
              num2str(length(metList))] ;
-set(handles.text_metsDeclared,'String',metString)
-set(handles.text_rxnsAdded,'String',rxnString) 
 
 % Pie chart of current matches. 
 pieData = [length(find(rxnList > 0)) ...
@@ -597,23 +663,23 @@ set(handles.text_nNeedReview,'String',num2str(pieData(3))) ;
 % Set colors, deal with possibility that a categorey may be empty. 
 if pieData(1) && pieData(2) && pieData(3)
     h = pie(handles.axes_pie,pieData) ;
-    set(h(1),'FaceColor',[0.765,  0.082,  0.145]) ;
+    set(h(1),'FaceColor',[0.597   0.594   0.594]) ;
     set(h(3),'FaceColor',[0.796,  0.792,  0.792]) ;
     set(h(5),'FaceColor',[1.000,  1.000,  1.000]) ;
 elseif pieData(1) && pieData(2) && ~pieData(3)
     pieData = [pieData(1) pieData(2)] ;
     h = pie(handles.axes_pie,pieData) ;
-    set(h(1),'FaceColor',[0.765,  0.082,  0.145]) ;
+    set(h(1),'FaceColor',[0.597   0.594   0.594]) ;
     set(h(3),'FaceColor',[0.796,  0.792,  0.792]) ;
 elseif pieData(1) && ~pieData(2) && pieData(3)
     pieData = [pieData(1) pieData(3)] ;
     h = pie(handles.axes_pie,pieData) ;
-    set(h(1),'FaceColor',[0.765,  0.082,  0.145]) ;
+    set(h(1),'FaceColor',[0.597   0.594   0.594]) ;
     set(h(3),'FaceColor',[1.000,  1.000,  1.000]) ;
 elseif pieData(1) && ~pieData(2) && ~pieData(3)
     pieData = pieData(1);
     h = pie(handles.axes_pie,pieData) ;
-    set(h(1),'FaceColor',[0.765,  0.082,  0.145]) ;
+    set(h(1),'FaceColor',[0.597   0.594   0.594]) ;
 elseif ~pieData(1) && pieData(2) && pieData(3)
     pieData = [pieData(2) pieData(3)] ;
     h = pie(handles.axes_pie,pieData) ;
@@ -628,12 +694,13 @@ elseif ~pieData(1) && ~pieData(2) && pieData(3)
     h = pie(handles.axes_pie,pieData) ;
     set(h(1),'FaceColor',[1.000,  1.000,  1.000]) ;
 end
-pielabel = findobj(gca, 'Type', 'text');
-set(pielabel, 'FontWeight', 'bold', 'Color', [0.5 0.5 0.5]);
+pielabel = findobj(h, 'Type', 'text');
+set(pielabel, 'FontWeight', 'bold', 'Color', [0.41 0.4 0.4]);
 
 % Histogram of best matches
 axes(handles.axes_hist)
-hist(double(bestMatch),100) ;
+[frequency, position] = hist(double(bestMatch),100) ;
+bar(position,frequency,'facecolor',[0.765,  0.082,  0.145],'edgecolor',[0.765,  0.082,  0.145]) 
 axis tight
 xlim([0 1]) ;
 title('Frequency of scores of best match per reaction')
@@ -710,8 +777,6 @@ function edit_select_match_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -722,8 +787,6 @@ function edit_rxn_num_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -734,8 +797,6 @@ function edit_score_table_name_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -746,8 +807,6 @@ function edit_num_matches_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -758,8 +817,6 @@ function edit_cmodel_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -770,8 +827,6 @@ function edit_tmodel_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -782,8 +837,6 @@ function edit_low_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -794,8 +847,6 @@ function edit_margin_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -806,8 +857,6 @@ function edit_high_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -818,7 +867,6 @@ function slider_minscore_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
@@ -840,4 +888,29 @@ function edit_metmatch_high_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+end
+
+
+% additional function for counting carbons.
+function Cs = CsInFormula(formulaString,stoicString)
+Cs = 0 ;
+scPos = [0 strfind(formulaString,';') length(formulaString)+1] ;
+scPosS = [0 strfind(stoicString,';') length(stoicString)+1] ;
+for isc = 1:length(scPos)-1
+    nowSubstring = formulaString(scPos(isc)+1:scPos(isc+1)-1) ;
+    stoic = abs(str2double(stoicString( ...
+        scPosS(isc)+1:scPosS(isc+1)-1))) ;
+    Cs = Cs + stoic * countC(nowSubstring) ;
+end
+end
+
+% check if for all metabolites Formulas were given 
+function allFormulas = formulasPresentCheck(nowstring)
+    allFormulas = false ;
+    if ~strcmp(nowstring,';')
+        singlestrings = splitString(nowstring,';') ;
+        if length(singlestrings) == (length(strfind(nowstring,';'))+1)
+            allFormulas = true ;
+        end
+    end
 end

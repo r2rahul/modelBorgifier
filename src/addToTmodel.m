@@ -1,4 +1,19 @@
-function TmodelC = addToTmodel(Cmodel,Tmodel,rxnList,metList)
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
+function [TmodelC, Cmodel] = addToTmodel(Cmodel,Tmodel,rxnList,metList, varargin)
 %addToTModel Adds reactions and info from a comparison model into the 
 % master template database, Tmodel.
 %
@@ -15,6 +30,7 @@ function TmodelC = addToTmodel(Cmodel,Tmodel,rxnList,metList)
 % metList       Array the length of Cmodel.mets with corresponding matching
 %               met indexes from Tmodel. New mets should already have their
 %               correct index in Tmodel. 
+% 'NoClean'     Don't call cleanTmodel at the end of this function
 %
 %OUTPUTS
 % Tmodel        The addended master reaction database.
@@ -22,12 +38,8 @@ function TmodelC = addToTmodel(Cmodel,Tmodel,rxnList,metList)
 %CALLS
 % cleanTmodel
 %
-%
-%DEVLOPEMENT NOTES/TO DO
-% 27.11.12 Changed inputs to rxnList and metList, removed saving
-%          functionality. metCompare is no longer done here. 
 
-%% Declare variables.
+%% Declare variables.    
 % Number of reactions and metabolites being added. 
 cRxns = length(rxnList) ;
 cMets = length(metList) ; 
@@ -125,10 +137,13 @@ if tRxnsNow > tRxns
     Tmodel.S(:,end+1:tRxnsNow) = 0 ; 
 end
 
-
 %% Deal with new metabolites (already have index for Tmodel).
 % Number of current metabolites in Tmodel.
 tMets = length(Tmodel.mets) ; 
+
+% ensure that there are no gaps in the numbering of new mets
+numNewMets = sum(metList > tMets) ;
+metList(metList > tMets) = tMets + (1:numNewMets) ;
 
 % Number of new metabolites.
 tMetsNow = max(metList); 
@@ -196,16 +211,21 @@ for iMet = 1:length(newMets)
         for iSis = 1:length(sisMetPos) ;
             compartment = Cmodel.mets{sisMetPos(iSis)}(end-2:end) ; 
             Cmodel.mets{sisMetPos(iSis)} = [newName compartment] ; 
-%             Cmodel.metID{sisMetPos(iSis)} = [newName compartment];
         end
     end
 end
 
-
 %% Add reactions.
+% find protons and water
+ignoreMets = find(strncmpi(Tmodel.mets,'h[',2) + ...
+    strncmpi(Tmodel.mets,'h+[',3) + ...
+    strncmpi(Tmodel.mets,'proton[',7) +...
+    strncmpi(Tmodel.mets,'h2o[',4) + ...
+    strncmpi(Tmodel.mets,'water[',6) ) ;
+
 for cRxn = 1:cRxns 
-   tRxn = rxnList(cRxn) ;  
-    
+   tRxn = rxnList(cRxn) ;   
+   
    % Update identity array
    Tmodel.Models.(cName).rxns(tRxn) = true ;
 
@@ -220,7 +240,11 @@ for cRxn = 1:cRxns
        metPos = find(Cmodel.S(:,cRxn)) ;
        metStoics = Cmodel.S(metPos,cRxn) ;
        for iMet = 1:length(metPos)
+           try
            Tmodel.S(metList(metPos(iMet)),tRxn) = metStoics(iMet) ;
+           catch
+               pause(0.1)
+           end
        end
    else
        Tmodel.rxnID{tRxn} = strcat(Tmodel.rxnID{tRxn},cNameAdd, ...
@@ -274,12 +298,14 @@ for cRxn = 1:cRxns
    
    % Reverse bounds when reactions have opposite reactants and products.
    % Criteria: reaction has match, reaction is not reversible, and the 
-   % products of one match matches the reactants of the other.
-   if rxnList(cRxn) < tRxns && ~Cmodel.rev(cRxn)
+   % products of one match matches the reactants of the other and vice versa.
+   if rxnList(cRxn) < tRxns % && ~Cmodel.rev(cRxn)
        % Collect metabolite information from metList assignments.
-       cProd = metList(Cmodel.S(:,cRxn) > 0) ; 
-       tReac = find(Tmodel.S(:,tRxn) < 0) ;
-       if ismember(cProd,tReac)
+       cProd = setdiff(metList(Cmodel.S(:,cRxn) > 0) ,ignoreMets) ; 
+       tReac = setdiff(find(Tmodel.S(:,tRxn) < 0) , ignoreMets) ;
+       cReac = setdiff(metList(Cmodel.S(:,cRxn) < 0) , ignoreMets) ; 
+       tProd = setdiff(find(Tmodel.S(:,tRxn) > 0) , ignoreMets);
+       if mean(ismember(cProd,tReac)) == 1 && mean(ismember(cReac,tProd)) == 1
            % Do the deed. 
            [Tmodel.lb.(cName)(tRxn),Tmodel.ub.(cName)(tRxn)] = ...
                 deal(-Tmodel.ub.(cName)(tRxn), -Tmodel.lb.(cName)(tRxn)) ;
@@ -334,6 +360,10 @@ for cMet = 1:cMets
     
 end
 
-
-%% Clean and output Tmodel. 
-TmodelC = cleanTmodel(Tmodel) ;
+%% output Tmodel
+if strcmpi(varargin{1},'NoClean')
+    TmodelC = Tmodel ;
+else
+    % Clean and output Tmodel.
+    TmodelC = cleanTmodel(Tmodel) ;
+end

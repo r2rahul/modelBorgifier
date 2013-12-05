@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
 function [metList,stopFlag] = metCompare(RxnInfo) 
 %metCompare launches the metCompareGUI, first preparing information for the
 % GUI and automatching some metabolites. If all metabolites are matched,
@@ -46,10 +61,28 @@ RxnInfo = fillRxnInfo(RxnInfo) ;
 % Check initial met matches, bypass GUI if possible. Only do this when
 % metabolites are being compared from a reaction.
 if RxnInfo.rxnIndex
-    RxnInfo = autoMatchMets(RxnInfo) ;
+    
+    if isfield(TMODEL,'forceMetReview')
+        if TMODEL.forceMetReview
+            RxnInfo.flagGUI = 1 ;
+            RxnInfo.goodMatch = zeros(RxnInfo.nMets,1) ;
+        else
+            RxnInfo = autoMatchMets(RxnInfo) ;
+        end
+    else
+        RxnInfo = autoMatchMets(RxnInfo) ;
+    end
+    
 else
     RxnInfo.flagGUI = 1 ;
     RxnInfo.goodMatch = zeros(RxnInfo.nMets,1) ;
+end
+
+% force review in GUI
+if isfield(TMODEL,'forceMetReview')
+    if TMODEL.forceMetReview
+        RxnInfo.flagGUI = 1 ;
+    end
 end
 
 % Launch GUI
@@ -112,10 +145,11 @@ for iMet = 1:RxnInfo.nMets
    RxnInfo.metData(5,iMet) = CMODEL.metKEGGID(RxnInfo.metIndex(iMet)) ;
    RxnInfo.metData(6,iMet) = CMODEL.metSEEDID(RxnInfo.metIndex(iMet)) ;
    RxnInfo.metData(7,iMet) = CMODEL.metID(RxnInfo.metIndex(iMet)) ; 
-   [matchScores, matchIndex, hit] = findMetMatch(RxnInfo.metIndex(iMet),... 
-                                                 RxnInfo.rxnMatch) ;
+   [RxnInfo.matchScores{iMet}, RxnInfo.matchIndex{iMet}, hit] = findMetMatch(RxnInfo.metIndex(iMet),... 
+                                       RxnInfo.rxnMatch) ;
+   RxnInfo.metDataInfo = {'ID' ; 'Name'; 'Formula'; 'Charge'; 'KEGGid'; 'SEEDid'; 'oldID'} ; 
    % Assign best match, but if no hit was found change it to zero.
-   RxnInfo.matches(iMet) = matchIndex(1) ;                        
+   RxnInfo.matches(iMet) = RxnInfo.matchIndex{iMet}(1) ;                        
    if ~hit ; 
        RxnInfo.matches(iMet) = 0 ; 
    end 
@@ -159,13 +193,6 @@ for iMet = 1:RxnInfo.nMets
         continue
     end
     
-    % Check if the met was declared new by findMetMatch. If it was,
-    % declare good and move on. 
-    if ~RxnInfo.matches(iMet)
-        goodMatch(iMet) = 1 ;  
-        continue
-    end
-    
     % Check if there are KEGG IDs and if they match
     cKegg = CMODEL.metKEGGID{RxnInfo.metIndex(iMet)} ;
     tKegg = TMODEL.metKEGGID{RxnInfo.matches(iMet)} ;
@@ -191,14 +218,6 @@ for iMet = 1:RxnInfo.nMets
             end
         end
     end
-    
-%     % Check for ID agains IDs.
-%     % Put a ':' infront of the CMODEL string to ensure it is the full word.
-%     cID = [':' CMODEL.metID{RxnInfo.metIndex(iMet)}] ;
-%     tID = TMODEL.metID{RxnInfo.matches(iMet)} ;
-%     if ~isempty(strfind(tID,cID))
-%         goodMatch(iMet) = 1 ;
-%     end
     
     % Check if compartment matches. If not, declare not good and move on. 
     cComp = CMODEL.mets{RxnInfo.metIndex(iMet)}(end-1) ;

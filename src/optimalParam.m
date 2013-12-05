@@ -1,4 +1,19 @@
-function [bestCost bestGamma] = optimalParam(grouplabels,data)
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
+function [bestCost, bestGamma] = optimalParam(grouplabels,data)
 %optimalParam determines the best cost and gamma parameters for svmtrain. 
 %
 % [bestCost bestGamma] = optimalParam(grouplabels,data)
@@ -51,8 +66,6 @@ while improve
     bestpos = qc == bestqc2 ;
     bestpos = [round(mean(find(sum(bestpos,2)))) ...
                round(mean(find(sum(bestpos,1)))) ] + 1 ;
-           
-%     disp([bestCost bestGamma])
     
     % Make search grid finer. 
     stepsize = stepsize * 0.5 ;
@@ -65,9 +78,5 @@ while improve
     end
     if backupcnt > 5
         improve = false ;
-%         figure
-%         surf(gammarange, costrange, nowqc)
-%         xlabel('Gamma Range') ; ylabel('Cost Range') ; 
-%         zlabel('Accuracy') ; 
     end
 end

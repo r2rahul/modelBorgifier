@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+%
+%
 function metList = newCompsNewMets(metList,Cmodel,Tmodel) 
 %newCompsNewMets declares all metabolites in Cmodel that come from
 % compartments NOT in Tmodel as new.

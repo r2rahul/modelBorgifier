@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+%
+%
 function infoList = removeDuplicateNames(infoList)
 %removeDuplicateNames accepts a cell array of strings, with info seperated
 % by a '|' within each cell, and removes the duplicate names in each cell. 
@@ -37,7 +52,7 @@ for iInfo = 1:length(infoList)
         end
     end
     % Sort the data based on length.
-    [null lengthOrder] = sort(newInfoLength) ; 
+    [null, lengthOrder] = sort(newInfoLength) ; 
     newInfoCell = newInfoCell(lengthOrder) ; 
     % Assemble cell array into single string. 
     newInfo = newInfoCell{1} ; 

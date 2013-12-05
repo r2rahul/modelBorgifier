@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
 function Tmodel = cleanTmodel(Tmodel) 
 %cleanTmodel Reorganizes and checks Tmodel for completeness. To be used 
 % immediately after addToTmodel. 
@@ -67,6 +82,113 @@ for iMo = 1:length(moNames)
     end
     Tmodel.Models.(moNames{iMo}).mets = logical(metsArray) ;
 end
+
+%% Prefer biologist-friendly names for reactions and metabolites
+beautifynames = input(['Should I try to replace cryptic names by nicer ones? ' char(10) ...
+                       'y...yes in all cases' char(10) ...
+                       'a...ask me every time' char(10) ...
+                       'n...no thanks (default)' char(10)], 's') ;
+askeverytime = strcmpi(beautifynames,'a') ;            
+if ismember(beautifynames,{'y', 'a', 'Y', 'A'})
+    for im = 1:nMets
+        nowIDsep = {Tmodel.mets{im}(1:end-3)} ;
+        nowcomp = Tmodel.mets{im}(end-2:end) ;
+        % parse alternative metIDs
+        nowIDs = Tmodel.metID{im};
+        nowdelim1 = strfind(nowIDs,':') ;
+        nowdelim2 = [strfind(nowIDs,'|') strfind(nowIDs,':') length(nowIDs) + 1] ;
+        for ii = 1:length(nowdelim1)
+            nowIDsep{ii+1} = nowIDs(nowdelim1(ii)+1:min(nowdelim2(nowdelim2 > nowdelim1(ii)))-1) ;
+            nowIDsep{ii+1} = lower(nowIDsep{ii+1}(1:min([strfind(nowIDsep{ii+1},'[')-1, length(nowIDsep{ii+1})]))) ;
+            nowIDsep{ii+1} = removeproblematiccharacters(nowIDsep{ii+1}) ;
+        end
+        [nowIDalt, ~, freq] = unique(nowIDsep) ;
+        nowIDalt = nowIDalt(~cellfun(@isempty,nowIDalt)) ;
+        tailnum = [] ; idfreq = [] ;
+        if length(nowIDalt) == 1
+            % no alternative name found, keep the current one
+        else
+            for ii = 1:length(nowIDalt)
+                tailnum(ii) = length(nowIDalt{ii}(max(find(charpos(nowIDalt{ii}))):end))-1 ;
+                idfreq(ii) = sum(freq == ii) ;
+            end
+            [~, goodids] = min((tailnum+2)./(2*idfreq)) ;
+            % if leading character is a number in original name but "a" in new
+            % name, then do nothing
+            nowcharpos = charpos(Tmodel.mets{im}) ;
+            if ~strcmp(nowIDalt{goodids}, Tmodel.mets{im}(1:end-3)) && ...
+                    ~(~nowcharpos(1) && strcmp(nowIDalt{goodids}(1),'a')) && ...
+                   length(Tmodel.mets{im}(max(find(charpos(Tmodel.mets{im}(1:end-3)) ) ):end-3)) > 4
+                if askeverytime
+                    replacethistime = input(['Should I rename ' Tmodel.mets{im} ' to '...
+                                             nowIDalt{goodids} nowcomp ' (y/n)?'], 's') ;
+                end
+                if ~askeverytime || strcmpi(replacethistime,'y')
+                    disp(['renaming ' Tmodel.mets{im} ' to ' nowIDalt{goodids} nowcomp])
+                    Tmodel.mets{im} = [nowIDalt{goodids} nowcomp] ;
+                end
+            end
+        end
+    end
+    for ir = 1:nRxns
+        % transport to extracellular reaction
+        if numel(find(Tmodel.S(:,ir))) == 1
+            if strcmp(Tmodel.mets{(Tmodel.S(:,ir))~=0}(end-2:end),'[e]')
+                newrxnname = ['ex_' lower(Tmodel.mets{(Tmodel.S(:,ir))~=0}(1:end-3)) '_e'] ;
+                if ~strcmp(newrxnname, Tmodel.rxns{ir})
+                    if askeverytime
+                        replacethistime = input(['Should I rename '  Tmodel.rxns{ir}  ' to '...
+                                             newrxnname ' (y/n)?'], 's') ;
+                    end
+                    if ~askeverytime || strcmpi(replacethistime,'y')
+                        disp(['correcting ' Tmodel.rxns{ir} ' to ' newrxnname])
+                        Tmodel.rxns{ir} = newrxnname ;
+                    end
+                end
+            end
+        else % normal reactions
+            nowIDsep = Tmodel.rxns(ir) ;
+            if strcmp(nowIDsep{1}(end-1),'_')
+                % this reaction has probably been already renamed to ensure
+                % unique reaction names. Therefore do nothing.
+                continue
+            end
+            % parse alternative rxnIDs
+            nowIDs = Tmodel.rxnID{ir} ;
+            nowdelim1 = strfind(nowIDs,':') ;
+            nowdelim2 = [strfind(nowIDs,'|') strfind(nowIDs,':') length(nowIDs) + 1] ;
+            for ii = 1:length(nowdelim1)
+                nowIDsep{ii+1} = nowIDs(nowdelim1(ii)+1:min(nowdelim2(nowdelim2 > nowdelim1(ii)))-1) ;
+                nowIDsep{ii+1} = lower(nowIDsep{ii+1}(1:min([strfind(nowIDsep{ii+1},'[')-1, length(nowIDsep{ii+1})]))) ;
+                nowIDsep{ii+1} = removeproblematiccharacters(nowIDsep{ii+1}) ;
+            end
+            [nowIDalt, ~, freq] = unique(nowIDsep) ;
+            tailnum = [] ; idfreq = [] ;
+            if length(nowIDalt) == 1
+                % no alternative name found, keep the current one
+            else
+                for ii = 1:length(nowIDalt)
+                    tailnum(ii) = length(nowIDalt{ii}(max(find(charpos(nowIDalt{ii}))):end))-1 ;
+                    idfreq(ii) = sum(freq == ii) ;
+                end
+                [~, goodids] = min((tailnum+2)./(2*idfreq)) ;
+                % check that the name is not already taken
+                if sum(strcmp(Tmodel.rxns, nowIDalt{goodids})) == 0 && ...
+                   length(Tmodel.rxns{ir}(max(find(charpos(Tmodel.rxns{ir}) ) ):end)) > 4
+                    if askeverytime
+                        replacethistime = input(['Should I rename '  Tmodel.rxns{ir}  ' to '...
+                                             nowIDalt{goodids} ' (y/n)?'], 's') ;
+                    end
+                    if ~askeverytime || strcmpi(replacethistime,'y')
+                        disp(['replacing ' Tmodel.rxns{ir} ' to ' nowIDalt{goodids}])
+                        Tmodel.rxns{ir} = nowIDalt{goodids} ;
+                    end
+                end
+            end
+        end
+    end
+end
+
 
 %% Make sure all names are unique before reorganizing.
 % Rebuild reaction equations so there is a hint for renaming rxns. 
@@ -184,124 +306,3 @@ for iF = 1:length(existFields)
         Tmodel = rmfield(Tmodel,deleteFields{iF}) ;
     end
 end
-
-
-%% Unused code (but helpful for cleaning up models if there are mistakes.
-% It is a little messy, sorry
-
-% %%
-% 
-% % Fixing empty rxnID
-% noRxnID = cellfun('isempty',Tmodel.rxnID) ;
-% noRxnID = find(noRxnID) ;
-% noRxnIDName = Tmodel.rxnNames(noRxnID) ;
-% for i = 1:length(noRxnIDName)
-%     noRxnIDName{i} = noRxnIDName{i}(10:end) ;
-% end
-% clear i
-% for i = 1:length(noRxnID)
-%     test(i,1) = strcat('iBSU1103:',Tmodel.rxns(noRxnID(i))) ;
-% end
-% Tmodel.rxnID(noRxnID) = test;
-% noRxnIDrxns = Tmodel.rxns(noRxnID) ;
-% 
-% 
-% 
-% metPosInT = zeros(length(noRxnID),1) ;
-% for i = 1:length(noRxnID)
-%     metPosInT(i) = find(Tmodel.S(:,noRxnID(i))) ;
-% end
-% metNamesInT = Tmodel.mets(metPosInT) ;
-% test = unique(metNamesInT) ;
-% 
-% 
-% % Bad mets (ones that do not have handedness)
-% for i = 1:length(noRxnIDName)
-%     rxnIndexBSU(i) = find(strcmp(noRxnIDName{i},iBSU1103.rxnNames)) ;
-% end
-% rxnNameBSU = rxnNameBSU(:) ;
-% badMets = find(strcmp(noRxnIDName{i},iBSU1103.rxnNames)) ;
-% badMetEx = find(strcmp('ala[e] Export',noRxnIDName)) ;
-% iBSU1103.rxnNames(badMets)
-% metNamesInT(badMetEx)
-% Tmodel.rxnNames(noRxnID(badMetEx))
-% test = unique(noRxnIDName) ;
-% test2 = iBSU1103.rxnNames(rxnNameBSU) ;
-% test3 = iBSU1103.rxnEquations(rxnNameBSU) ;
-% iBSU1103.rxnNames(1640)
-% 
-% find(strcmp('glu[e] Export',noRxnIDName))
-% gluExRxns = find(strcmp(noRxnIDName{i},iBSU1103.rxnNames)) ;
-% gluExEq = iBSU1103.rxnEquations(gluExRxns) ;
-% for j = 1:2
-%     gluExMetPos(j) = find(iBSU1103.S(:,gluExRxns(j)))
-% end
-% gluExMetNames = iBSU1103.metNames{1085} ;
-% 
-% 
-% % No rxn name
-% noRxnName = cellfun('isempty',Tmodel.rxnNames) ;
-% noRxnName = find(noRxnName) ;
-% noRxnNameID = Tmodel.rxnID(noRxnName) ;
-% noRxnNameEq = Tmodel.rxnEquations(noRxnName) ;
-% for i = 1:length(noRxnName)
-%     test(i,1) = strcat('iBSU1103:',Tmodel.rxns(noRxnName(i))) ;
-% end
-% Tmodel.rxnNames(noRxnName) = test ;
-% 
-% for i = 1:length(test)
-%     rxnNameBSU(i) = find(strcmp(test{i},iBSU1103.rxnID)) ;
-% end
-% rxnNameBSU = rxnNameBSU(:) ;
-% test2 = iBSU1103.rxnNames(rxnNameBSU) ;
-% test3 = iBSU1103.rxnEquations(rxnNameBSU) 
-% 
-% test = Tmodel.rxnNames(noRxnss) ;
-% 
-% % No subsystems
-% noRxnss = cellfun('isempty',Tmodel.subSystems) ;
-% noRxnss = find(noRxnss) ;
-% 
-% % No Formulas.
-% noMetForm = cellfun('isempty',Tmodel.metFormulas) ;
-% noMetForm = find(noMetForm) ; 
-% test = Tmodel.mets(noMetForm) ;
-% 
-% 
-% %% Unused Code
-% 
-% % sharedRxnsLog(Tmodel.Models.iAF1260.rxns == Tmodel.Models.iBSU1103.rxns) = 1;
-% % sharedRxnsLog = logical(sharedRxnsLog(:)) ;
-% % sharedRxnIndexs = find(sharedRxnsLog) ;
-% % sharedRxns = Tmodel.rxns(sharedRxnsLog) ;
-% % sharedRxnsNo = sum(sharedRxnsLog) ;
-% % uniqRxnsLog = logical(uniqRxnsLog(:)) ;
-% % uniqRxnIndexs = find(sharedRxnsLog) ;
-% % uniqRxns = Tmodel.rxns(uniqRxnsLog) ;
-% % uniqRxnsNo = sum(uniqRxnsLog) ;
-% 
-% % Find reactions not in either model.
-% % uhoh = zeros(nRxns,1) ;
-% % for i = 1:length(sharedRxns)
-% %     if Tmodel.Models.iAF1260.rxns(i) == 0 && ...
-% %             Tmodel.Models.iBSU1103.rxns(i) == 0 
-% %          uhoh(i) = 1 ;
-% %     end
-% % end
-% % uhoh = find(uhoh) ;
-% 
-% % Find mets not in either model. 
-% uhoh = zeros(nMets,1) ;
-% for i = 1:length(shared)
-%     if Tmodel.Models.iAF1260.mets(i) == 0 && ...
-%             Tmodel.Models.iBSU1103.mets(i) == 0 
-%          uhoh(i) = 1 ;
-%     end
-% end
-% uhoh = find(uhoh) ;
-% uhoh(11) = 2307 ;
-% uhoh = uhoh(1:10)
-% 
-% Tmodel.mets(uhoh)
-% Tmodel.metID(uhoh)
-% Tmodel.Models.iBSU1103.mets(uhoh) = 1 ;

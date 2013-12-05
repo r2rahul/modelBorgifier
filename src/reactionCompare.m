@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
 function [rxnList,metList,Stats] = reactionCompare(CmodelIn,TmodelIn, ...
                                                    scoreIn,varargin) 
 %reactionCompare is the function front end for autoMatchReactions and 
@@ -59,8 +74,6 @@ if nargin > 3
     rxnList = varargin{1} ;
 else
     rxnList = ones(length(CMODEL.rxns),1)*-1 ;
-    [rxnList,metList] = autoMatchReactions(Stats.scoreTotal, ...
-                                           rxnList,metList,0.99,0.1,0.01);
 end
 
 %% Manual reaction comparison.
@@ -70,6 +83,7 @@ InfoBall.rxnList = rxnList ;
 InfoBall.metList = metList ; 
 InfoBall.CmodelName = CMODEL.description ;
 InfoBall.Stats = Stats ;
+InfoBall.S = CMODEL.S ;
 
 % Launch GUI.
 [rxnList,metList,Stats] = reactionCompareGUI(InfoBall) ; 

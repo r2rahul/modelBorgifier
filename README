@@ -5,5 +5,5 @@ modelBorgifier is compatible and tested with version 2.0.5 of the COBRA Toolbox 
 modelBorgifier_manual.pdf contains documentation in the main directory.
 driveModelBorgifier is  test script, located in the main directory, and references files in the /test directory. See the manual.
 The contact for this package is:
-Joerg Buescher@brain-biotech.de
-Please direct all compliments, bug reports, installation, and usage to this e-mail.
+jrb@brain-biotech.de
+Please direct all compliments, bug reports, and comments to this e-mail.

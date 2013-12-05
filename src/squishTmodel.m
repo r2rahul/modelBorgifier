@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
 function Tmodel = squishTmodel(Tmodel,varargin)
 %squishTmodel compresses Tmodel to look like one model, rathes than a
 % combination of othes models. 
@@ -63,14 +78,12 @@ c = zeros(length(Tmodel.rxns),1) ;
 % If model is given, use information from it.
 if ~strcmp(prefModel,'none') 
     c = Tmodel.c.(prefModel) ;
-%     if ~strcmp(revMethod,'conservative')
-        rev(Tmodel.Models.(prefModel).rxns) = ...
-            Tmodel.rev.(prefModel)(Tmodel.Models.(prefModel).rxns) ;
-        lb(Tmodel.Models.(prefModel).rxns) = ...
-            Tmodel.lb.(prefModel)(Tmodel.Models.(prefModel).rxns) ;
-        ub(Tmodel.Models.(prefModel).rxns) = ...
-            Tmodel.ub.(prefModel)(Tmodel.Models.(prefModel).rxns) ;
-%     end
+    rev(Tmodel.Models.(prefModel).rxns) = ...
+        Tmodel.rev.(prefModel)(Tmodel.Models.(prefModel).rxns) ;
+    lb(Tmodel.Models.(prefModel).rxns) = ...
+        Tmodel.lb.(prefModel)(Tmodel.Models.(prefModel).rxns) ;
+    ub(Tmodel.Models.(prefModel).rxns) = ...
+        Tmodel.ub.(prefModel)(Tmodel.Models.(prefModel).rxns) ;
 end
 
 % Combine genes.

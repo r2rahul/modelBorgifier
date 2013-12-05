@@ -13,7 +13,12 @@
 % jrb@brain-biotech.de
 % 
 %
-function obj = optWeightExp(weight, highscoreVectors, lowscoreVectors, wnum, hitnum, missnum)
-    obj = 1/(abs(mean((highscoreVectors.^repmat(weight(:,2),1,hitnum ))'*weight(:,1)) - ...
-                 mean(( lowscoreVectors.^repmat(weight(:,2),1,missnum))'*weight(:,1)))+1) ;
+function out = folderseparator 
+
+if isunix
+    out = '/' ;
+elseif ispc
+    out = '\' ;
+elseif ismac
+    out = '/' ;
 end

@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+%
+%
 function Model = organizeModelCool(Model)
 %organizeModelCool reorders a COBRA model such that the most promiscuous
 % mets are listed first, with sister mets grouped together. Reactions are
@@ -82,8 +97,8 @@ for iMet = nMets:-1:1
     % Remove reaction from running.
     SearchS(:,involvedRxns) = 0 ;
 end
-% remove erroneous reactions
-rxnIndex = rxnIndex(rxnIndex > 0) ;
+% put remaining reactions on top
+rxnIndex(rxnIndex == 0) = setdiff(1:nRxns,rxnIndex) ;
 
 %% Reorder everything.
 % Grab fields names.
@@ -101,11 +116,7 @@ mNumFields = fields{4} ;
 % Reorder reaction related lists.
 for iField = 1:length(rxnFields)
     if isfield(Model,rxnFields{iField})
-        try
         Model.(rxnFields{iField}) = Model.(rxnFields{iField})(rxnIndex) ;
-        catch
-            pause(0.1)
-        end
     end
 end
 

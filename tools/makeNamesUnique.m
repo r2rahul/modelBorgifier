@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+%
+%
 function nameList = makeNamesUnique(nameList, varargin)
 %makeNamesUnique identifies duplicate names in a list of names (cell array)
 % and prompts the user to input new names. 
@@ -83,8 +98,10 @@ for iName = 1:length(uniqList) ;
             while 1
                 prompt = ['Rename ' num2str(dupPos(iDup)) ' as: '] ;
                 newName = input(prompt,'s') ;
+                alreadytherepos = strcmp(newName,nameList) ;
+                alreadytherepos(dupPos) = false ;
                 % Check to see if name is already taken
-                if isempty(find(strcmp(newName,nameList),1))
+                if sum(alreadytherepos) == 0
                     nameList{dupPos(iDup)} = newName ;
                     break
                 else

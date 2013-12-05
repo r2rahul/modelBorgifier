@@ -13,22 +13,11 @@
 % jrb@brain-biotech.de
 % 
 %
-function cNum = countC(nowFormula)
-%countC finds number of carbons in a formula, if any.
-%
-% cNum = countC(nowFormula)
+function letterpos = charpos(instr)
+% finds the letter characters (as opposed to numeric characters) in a string
+% and returns a logical array
 
-% Remove alternate formulas.
-nowFormula = regexprep(nowFormula,'/|,*','') ;
-
-% Look for C's
-cNum = regexp(nowFormula,'C\d*','match') ;
-if isempty(cNum)
-    cNum = 0 ;
-else
-    if length(cNum{1}) == 1 ;
-        cNum = 1 ;
-    else
-        cNum = str2double(cNum{1}(2:end)) ;
-    end
+letterpos = false(size(instr)) ;
+for i = 1:length(instr)
+    letterpos(i) = isnan(str2double(instr(i))) ;
 end

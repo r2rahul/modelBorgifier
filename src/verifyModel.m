@@ -1,12 +1,30 @@
-function Model = verifyModel(Model)
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
+function Model = verifyModel(Model,varargin)
 %verifyModel Ensures that a model is in the correct format to be analyzed
 % by any of the scripts in the Tmodel suite.
 %   
 %INPUTS
-% Vmodel    Model from readCbModel any of the readModel functions.
+% Vmodel     Model from readCbModel any of the readModel functions.
+%
+%OPTIONAL INPUT
+% 'keepName' Don't ask for verification of model name
 %
 %OUTPUTS
-% Model     Model with additional fields and correct format.
+% Model      Model with additional fields and correct format.
 %
 %CALLS
 % TmodelFields
@@ -18,6 +36,15 @@ function Model = verifyModel(Model)
 % organizeModelCool
 
 %% Declare variables.
+askForModelName = true ;
+if ~isempty(varargin)
+    if ischar(varargin{1})
+        if strcmpi(varargin{1},'keepName')
+            askForModelName = false ;
+        end
+    end
+end
+
 nRxns = length(Model.rxns);
 nMets = length(Model.mets);
 
@@ -78,7 +105,7 @@ for iField = 1:length(Field.met)
        vFieldLength = length(Model.(fieldNames{fieldIndex}));
        if vFieldLength ~= nMets ;
            vFieldLength = vFieldLength + 1 ;
-           Model.(fieldNames{fieldIndex})(vFieldLength:nRxns) = {''};
+           Model.(fieldNames{fieldIndex})(vFieldLength:nMets) = {''};
        end
    end
 end
@@ -89,15 +116,16 @@ for iField = 1:length(Field.mNum)
    fieldIndex = find(fieldIndex);
    if isempty(fieldIndex) % Field does not currently exist
        fprintf(['Array .' Field.mNum{iField} ' not in Model. Adding.\n'])
-       Model.(Field.mNum{iField}) = zeros(nRxns,1); 
+       Model.(Field.mNum{iField}) = zeros(nMets,1); 
    else % Field exists, check if the length is correct
        vFieldLength = length(Model.(fieldNames{fieldIndex}));
-       if vFieldLength ~= nRxns ;
+       if vFieldLength ~= nMets ;
            vFieldLength = vFieldLength + 1 ;
-           Model.(fieldNames{fieldIndex})(vFieldLength:nRxns) = 0 ;
+           Model.(fieldNames{fieldIndex})(vFieldLength:nMets) = 0 ;
        end
    end
 end
+
 
 %% Ensure reactions are forwards.
 fprintf('Making sure reactions are all forwards\n')
@@ -209,19 +237,35 @@ end
 if ~isfield(Model,'description')
     needModelName = 1 ; 
 else
-    fprintf(['Current model name is:\n' Model.description '\n'])
-    answer = input('Keep name? (y/n): ','s');
-    if strcmpi(answer,'y') || strcmpi(answer,'yes')
-        fprintf('Keeping name\n')
+    if askForModelName
+        fprintf(['Current model name is:' char(10) Model.description char(10)])
+        answer = input('Keep name? (y/n): ','s');
+        if strcmpi(answer,'y') || strcmpi(answer,'yes')
+            fprintf('Keeping name\n')
+            needModelName = 0 ;
+        else
+            needModelName = 1 ;
+        end
+    else 
         needModelName = 0 ;
-    else
-        needModelName = 1 ; 
     end
 end
-if needModelName
+try
+    test.(Model.description) = true  ;
+catch
+    disp('Sorry, this model name is invalid. (Hint: it must start with a letter and only contain letters and numbers)')
+    needModelName = 1 ;
+end
+while needModelName
     prompt = 'Input model name: ';
     modelName = input(prompt,'s');
     Model.description = modelName ;
+    try
+        test.(Model.description) = true  ;
+        needModelName = 0 ;
+    catch
+        disp('Sorry, this model name is invalid. (Hint: it must start with a letter and only contain letters and numbers)')
+    end
 end
 
 %% Reorder fields and organize model based on most common mets.

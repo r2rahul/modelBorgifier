@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
 function varargout = metCompareGUI(varargin)
 %metCompareGUI Creates a comparison GUI for deciding which metabolite are 
 % in a new or existing reaction.
@@ -45,6 +60,10 @@ function metCompareGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Declare globals
 global CMODEL TMODEL
+
+% workaround to enable java handles
+axes(handles.axes1)
+set(handles.axes1,'Visible','off')
 
 % Choose default command line output for metCompareGUI
 handles.output = hObject;
@@ -95,12 +114,6 @@ end
 % List unseen metabolites.
 if handles.RxnInfo.rxnIndex
   handles.RxnInfo.unseen = ~handles.RxnInfo.goodMatch ;
-% handles.RxnInfo.unseen = zeros(handles.RxnInfo.nMets,1) ;
-%     for iMet = 1:handles.RxnInfo.nMets
-%         if handles.RxnInfo.metList(handles.RxnInfo.metIndex(iMet)) == 0
-%             handles.RxnInfo.unseen(iMet) = 1 ;
-%         end
-%     end
 else
     % It just comparing metabolites, do not mark any as seen.
     handles.RxnInfo.unseen = ones(handles.RxnInfo.nMets,1) ;
@@ -134,19 +147,6 @@ set(handles.uitable_met,'CellSelectionCallback',{@metTableCallback, ...
 % Update handles structure ;
 guidata(hObject, handles) ;
 
-%???????????????? where to place this so that it works ?????????????????????????
-% % resize Row headers uitable_met
-% jscroll=findjobj(handles.uitable_met) ;
-% % if isstruct(jscroll)
-%     rowHeaderViewport=jscroll.getComponent(4) ;
-%     rowHeader=rowHeaderViewport.getComponent(0);
-%     newWidth = 125 ;
-%     rowHeaderViewport.setPreferredSize(java.awt.Dimension(newWidth,0));
-%     height=rowHeader.getHeight;
-%     rowHeader.setPreferredSize(java.awt.Dimension(newWidth,height));
-%     rowHeader.setSize(newWidth,height);
-% % end
-
 % UIWAIT makes metCompareGUI wait for user response (see UIRESUME)
 uiwait(handles.figure1);
 end
@@ -165,12 +165,16 @@ end
 %% Button and Input Change Functions
 % --- Executes on button press in buttonChoose.
 function handles = buttonChoose_Callback(hObject, eventdata, handles)
+global CMODEL
 RxnInfo = handles.RxnInfo ;
 % nowMetIndex is the index of the metabolite in CMODEL
 nowMetIndex = RxnInfo.metIndex(RxnInfo.nowMet) ;
 
 choice = get(get(handles.chooseMatch,'SelectedObject'),'Tag') ;
-[matchScores,matchIndex] = findMetMatch(nowMetIndex,RxnInfo.rxnMatch) ;
+
+matchScores = RxnInfo.matchScores{RxnInfo.nowMet} ;
+matchIndex  = RxnInfo.matchIndex{RxnInfo.nowMet} ;
+% [matchScores, matchIndex] = findMetMatch(nowMetIndex,RxnInfo.rxnMatch) ;
 
 switch choice
     case 'choose1'
@@ -184,6 +188,16 @@ switch choice
     case 'choose5'
         RxnInfo.matches(RxnInfo.nowMet) = matchIndex(5) ; 
     case 'chooseNew'
+        % if metabolite has been declared new, ensure that all reactions it is
+        % involved in are also declared new.
+        nowRxnIndex = find(CMODEL.S(nowMetIndex,:) ~= 0) ;
+        if sum(RxnInfo.rxnList(nowRxnIndex) > 0) > 0
+            
+            set(handles.errorField,'String',...
+                [CMODEL.mets{nowMetIndex} ' cannot be new, it is in matched Rxns ' ...
+                num2str(nowRxnIndex(RxnInfo.rxnList(nowRxnIndex) > 0)) ])
+            return
+        end
         RxnInfo.matches(RxnInfo.nowMet) = 0 ;
     case 'chooseOther'
         RxnInfo.matches(RxnInfo.nowMet) = ...
@@ -237,7 +251,9 @@ if ~isempty(eventdata.Indices)
     RxnInfo = handles.RxnInfo ; % For convenience.
     RxnInfo.nowMet = get(handles.popup_met,'Value') ; 
     nowMetIndex = RxnInfo.metIndex(RxnInfo.nowMet) ;
-    [matchScores,matchIndex] = findMetMatch(nowMetIndex,RxnInfo.rxnMatch) ;
+    matchScores = RxnInfo.matchScores{RxnInfo.nowMet} ;
+    matchIndex  = RxnInfo.matchIndex{RxnInfo.nowMet} ;
+%     [matchScores,matchIndex] = findMetMatch(nowMetIndex,RxnInfo.rxnMatch) ;
     
     
     % Set match reaction number based on column clicked. 
@@ -329,9 +345,6 @@ function chooseOtherNo_Callback(hObject, eventdata, handles)
 % hObject    handle to chooseOtherNo (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of chooseOtherNo as text
-%        str2double(get(hObject,'String')) returns contents of chooseOtherNo as a double
 end
 
 % --- Executes on change in editNMatches. NOT USED.
@@ -339,9 +352,6 @@ function editNMatches_Callback(hObject, eventdata, handles)
 % hObject    handle to editNMatches (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of editNMatches as text
-%        str2double(get(hObject,'String')) returns contents of editNMatches as a double
 end
 
 %% Subfunctions
@@ -351,18 +361,36 @@ function populateMetTables(handles)
 RxnInfo = handles.RxnInfo ;
 global CMODEL TMODEL
 
+% resize Row headers uitable_met
+jscroll = findjobj(handles.uitable_met) ;
+rowHeaderViewport=jscroll.getComponent(4) ;
+rowHeader=rowHeaderViewport.getComponent(0);
+newWidth = 125 ;
+rowHeaderViewport.setPreferredSize(java.awt.Dimension(newWidth,0));
+height=rowHeader.getHeight;
+rowHeader.setPreferredSize(java.awt.Dimension(newWidth,height));
+rowHeader.setSize(newWidth,height);
+% format left
+rend=rowHeader.getCellRenderer(1,0);
+rend.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+jscroll.repaint %apply changes 
+
 nowMetIndex = RxnInfo.metIndex(RxnInfo.nowMet) ;
 metDataTable = RxnInfo.metData(:,RxnInfo.nowMet) ;
 nowMetDataTable = [ {''} ;...
                      metDataTable{1} ;...
                      CMODEL.mets{nowMetIndex}(end-1) ; ...
                      metDataTable(2:end)] ;
-set(handles.uitable_met,'Data',nowMetDataTable) ;
 
 % Index of the met in CMODEL.
 nMatches = str2double(get(handles.editNMatches,'String')) ;
 metMatchTable = cell(7,nMatches) ;
-[matchScores,matchIndex] = findMetMatch(nowMetIndex,RxnInfo.rxnMatch) ;
+if nMatches <= RxnInfo.nMets
+    matchScores = RxnInfo.matchScores{RxnInfo.nowMet} ;
+    matchIndex  = RxnInfo.matchIndex{RxnInfo.nowMet} ;
+else
+    [matchScores,matchIndex] = findMetMatch(nowMetIndex,RxnInfo.rxnMatch) ;
+end
 for iMatch = 1:nMatches
     metMatchTable{1,iMatch} = num2str(matchScores(iMatch) / ...
                                       sum(matchScores(1:nMatches)) ) ;
@@ -388,22 +416,23 @@ end
 % Set color of good and bad correspondence in table.
 colOptions = {'blue', 'red'} ;
 for ic = 1:size(metMatchTable,2)
-    metMatchTable{1,ic} = ['<html><text>' metMatchTable{1,ic} ...
+    metMatchTable{1,ic} = ['<html><text>&nbsp; ' metMatchTable{1,ic} ...
         '</text><span style="background-color:' ...
         dec2hex(round(255*(1-str2num(metMatchTable{1,ic}))),2) ...
         '00' ...
         dec2hex(round(255*(str2num(metMatchTable{1,ic}))),2) ...
-        ';">_____</span></html>'] ;
-    metMatchTable{2,ic} = colText(metMatchTable{2,ic},colOptions{ ...
+        ';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</span></html>'] ;
+    metMatchTable{2,ic} = colText(['&nbsp; ' metMatchTable{2,ic}],colOptions{ ...
         2-strcmpi(metMatchTable{2,ic}(1:strfind(metMatchTable{2,ic}, ...
                                                 ', ')-1), ...
         nowMetDataTable{2,1}(1:strfind(nowMetDataTable{2,1},',')-1))}) ;
     for ir = 3:size(metMatchTable,1)
         if ~isempty(metMatchTable{ir,ic}) && ...
                 ~isempty(nowMetDataTable{ir,1})
-            metMatchTable{ir,ic} = colText(metMatchTable{ir,ic}, ...
-                colOptions{1+isempty(strfind(metMatchTable{ir,ic}, ...
-                nowMetDataTable{ir,1}))}) ;
+            metMatchTable{ir,ic} = colText(['&nbsp; ' metMatchTable{ir,ic}], ...
+                colOptions{1+isempty(strfind(metMatchTable{ir,ic}, nowMetDataTable{ir,1}) )}) ;
+        else
+            metMatchTable{ir,ic} = ['  ' metMatchTable{ir,ic}] ;
         end
     end
 end
@@ -439,6 +468,14 @@ if ~RxnInfo.rxnIndex
 end
 
 set(handles.uitable_matches,'Data',metMatchTable,'Fontsize',10) ;
+
+for ic = 1:size(nowMetDataTable,2)
+    for ir = 1:size(nowMetDataTable,1)
+        % add leading whitespace to all cells
+        nowMetDataTable{ir,ic} = ['  ' nowMetDataTable{ir,ic}] ;
+    end
+end
+set(handles.uitable_met,'Data',nowMetDataTable ,'Fontsize',10) ;
 
 % Update unseen mets field
 unseenMets = '' ;
@@ -551,7 +588,6 @@ if RxnInfo.rxnIndex
     if ~ismember(1,RxnInfo.unseen) && ~ismember(0,RxnInfo.goodMatch)
         errorString = 'Alles Klar' ;
         set(handles.buttonAddMets,'Enable','on') ;
-%         bgcolor = [0 0.7 0.2] ;
     else
         for iMet = 1:RxnInfo.nMets
             if RxnInfo.metList(RxnInfo.metIndex(iMet)) ~= ...
@@ -609,8 +645,6 @@ function popup_met_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -621,8 +655,6 @@ function chooseOtherNo_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -633,8 +665,6 @@ function editNMatches_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end

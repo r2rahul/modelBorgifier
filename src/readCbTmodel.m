@@ -1,6 +1,21 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
 function Model = readCbTmodel(modelName,varargin)
 %readCbTmodel Creates COBRA format of a specific model from Tmodel 
-% (composition database).
+% (composite database).
 %
 %Model = readCbTmodel(modelName,[Tmodel])
 %
@@ -82,11 +97,7 @@ for iF = 1:length(rxnFields)
     Model.(rxnFields{iF}) = Tmodel.(rxnFields{iF})(rxnLog) ; 
 end
 for iF = 1:length(rNumFields)
-    try
     Model.(rNumFields{iF}) = Tmodel.(rNumFields{iF}).(modelName)(rxnLog);
-    catch
-        pause(0.1)
-    end
 end
 
 % Remove information from other models for grRules.

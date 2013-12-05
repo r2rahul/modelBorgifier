@@ -1,3 +1,18 @@
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
+%
 function Stats = optimalScores(varargin) 
 %optimalScore takes the 3D SCORE matrix produced from compareCbModels and
 %   weights the scores based on a given training set using either SVM or
@@ -110,6 +125,7 @@ if exist('rxnList','var')
                                             zeros(1,size(missVec,2))]', ...
                                             [hitVec missVec]') ;      
         end
+        disp([cost, gamma])
         
         % Now run svm with determined parameters. 
         fprintf('SVMing.\n')

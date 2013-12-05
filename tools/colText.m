@@ -1,3 +1,5 @@
+% this file is based on Matlab Support Solution ID 1-D782JW
+% 
 function outHtml = colText(inText, inColor)
 % return a HTML string with colored font
 outHtml = ['<html><font color="', ...
