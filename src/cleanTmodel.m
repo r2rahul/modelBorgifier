@@ -83,6 +83,64 @@ for iMo = 1:length(moNames)
     Tmodel.Models.(moNames{iMo}).mets = logical(metsArray) ;
 end
 
+%% Check for accidently duplicated reactions and metabolites
+Sfind = zeros(size(Tmodel.S)) ;
+Sfind(Tmodel.S ~= 0) = 1 ;
+metpos = cell(1,nRxns) ;
+metposstr = cell(1,nRxns) ;
+for i = 1:nRxns
+    metpos{i} = find(Sfind(:,i)) ;
+    metposstr{i} = num2str(metpos{i}') ;
+end
+[~, a, b] = unique(metposstr) ;
+mergerxns = {} ; mergerxnratio = [] ;
+modelnames = fieldnames(Tmodel.Models)' ;
+for im = 1:length(modelnames)
+    rxnNowPresent(:,im) = Tmodel.Models.(modelnames{im}).rxns ;
+end
+mergeRxns = input(['Should I try merge identical reactions? ' char(10) ...
+                       'y...yes in all cases' char(10) ...
+                       'a...ask me every time' char(10) ...
+                       'n...no thanks (default)' char(10)], 's') ;
+askeverytime = strcmpi(mergeRxns,'a') ; 
+if ismember(mergeRxns,{'y', 'a', 'Y', 'A'})
+for i = 1:nRxns
+    if ~ismember(i,a) % rxns that use the same metabolites
+        eqset = find(b == b(i)) ;
+        stoicheck = 1 ;
+        for ie = 2:length(eqset) ;
+            rxnratio = unique(Tmodel.S(metpos{i},eqset(1)) ./ Tmodel.S(metpos{i},eqset(ie))) ;
+            if length(rxnratio) == 1 && ~isnan(rxnratio)  && ...
+                    sum(rxnNowPresent(eqset(1),:) .* rxnNowPresent(eqset(ie),:)) == 0 
+                if askeverytime
+                % if reactions have the same stoichiometry, maybe with a factor
+                disp([Tmodel.rxns{eqset(1)} '(' strjoin( modelnames(rxnNowPresent(eqset(1),:)),'|') ')' ' and '...
+                      Tmodel.rxns{eqset(ie)}  '(' strjoin( modelnames(rxnNowPresent(eqset(ie),:)),'|') ')'  ...
+                      ' seem to have the same stoichiometry' char(10) ...
+                     Tmodel.rxnEquations{eqset(1)} '  VS  ' Tmodel.rxnEquations{eqset(ie)} char(10) ])
+                shouldmerge = input('Do you want to merge them? [Y/n] ' ,'s') ;
+                elseif strcmpi(mergeRxns,'y')
+                    shouldmerge = 'y' ;
+                end
+                if ~strcmp(shouldmerge,'n')
+                    mergerxns{end+1} = eqset ;
+                    mergerxnratio(end+1) = rxnratio ;
+                    disp(['merging ' Tmodel.rxns{eqset(1)} '(' strjoin( modelnames(rxnNowPresent(eqset(1),:)),'|') ')' ' and '...
+                         Tmodel.rxns{eqset(ie)}  '(' strjoin( modelnames(rxnNowPresent(eqset(ie),:)),'|') ')' ])
+                end
+            end
+        end
+    end
+end
+Tmodel = mergeTrxns(Tmodel, mergerxns, mergerxnratio) ;
+disp(char(10))
+
+end
+
+% Re-count number of reactions and number of metabolites.
+nRxns = length(Tmodel.rxns) ;
+nMets = length(Tmodel.mets) ;
+
 %% Prefer biologist-friendly names for reactions and metabolites
 beautifynames = input(['Should I try to replace cryptic names by nicer ones? ' char(10) ...
                        'y...yes in all cases' char(10) ...
@@ -180,7 +238,7 @@ if ismember(beautifynames,{'y', 'a', 'Y', 'A'})
                                              nowIDalt{goodids} ' (y/n)?'], 's') ;
                     end
                     if ~askeverytime || strcmpi(replacethistime,'y')
-                        disp(['replacing ' Tmodel.rxns{ir} ' to ' nowIDalt{goodids}])
+                        disp(['replacing ' Tmodel.rxns{ir} ' by ' nowIDalt{goodids}])
                         Tmodel.rxns{ir} = nowIDalt{goodids} ;
                     end
                 end
@@ -188,7 +246,6 @@ if ismember(beautifynames,{'y', 'a', 'Y', 'A'})
         end
     end
 end
-
 
 %% Make sure all names are unique before reorganizing.
 % Rebuild reaction equations so there is a hint for renaming rxns. 

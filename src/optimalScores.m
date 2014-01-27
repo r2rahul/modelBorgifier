@@ -136,6 +136,33 @@ if exist('rxnList','var')
                              ' -g ' num2str(2^gamma) ...
                              ' -q -p .1']) ;
         weights = svmmodel.SVs' * svmmodel.sv_coef ;
+        
+    elseif strcmp(optimizer,'RF')
+        traindata = [hitVec missVec]' ;
+        trainlabel = [true(1,size(hitVec,2)) false(1,size(missVec,2))]' ;
+        trunk = zeros( size(traindata,1), size(traindata,2), size(traindata,2)) ;
+        % construct square training data
+        for it = 1:size(trunk,1)
+            trunk(it,:,:) = traindata(it,:)' * traindata(it,:) ;
+        end
+        % calculate discriminating quality of products of single score
+        % dimensions
+        qual = zeros(size(traindata,2)) ;
+        qualsign = zeros(size(traindata,2)) ;
+        for it = 1:size(qual,1) ;
+            for it2 = it:size(qual,1) ;
+                [~,qual(it,it2)] = ttest2(trunk(trainlabel,it,it2), trunk(~trainlabel,it,it2)) ;
+                qualsign(it,it2) = (mean(trunk(trainlabel,it,it2)) < mean(trunk(~trainlabel,it,it2)) ) ;
+            end
+        end
+        % discard useless values
+        qual(isnan(qual)) = 1 ;
+        qual(qual > 0.1) = 1 ;
+        % convert p-value to weight
+        weight2 = -log10(qual) ;
+        weight2(isinf(weight2)) = 0 ;
+        weight2(qualsign == 1) = -weight2(qualsign == 1) ;
+        
     elseif strcmp(optimizer,'linear')
         fprintf('Using optWeightLin function.\n')
         weights = fminunc(@(weight)optWeightLin(weight,hitVec,missVec), ...
@@ -157,30 +184,38 @@ if exist('rxnList','var')
         weights = ones(size(hitVec,1),1) ;
     end
     
-    if ~strcmp(optimizer,'exp')
-        % Ensure all weights are positive.
-        weights(weights < 0) = 0 ;
-        
-        % Adjust SCORE by the new weights and recompute normalization.
-        scoreWeighted = zeros(size(scoreTotal)) ;
-        for i = 1:length(weights)
-            scoreWeighted = scoreWeighted + ...
-                double(SCORE(:,:,i)) * weights(i) ;
-        end
-        [scoreTotal,Stats] = colapseScore(scoreWeighted) ;
-    
-    else
-        % Adjust SCORE by the new weights and recompute normalization.
-        scoreWeighted = zeros(size(scoreTotal)) ;
+    % Adjust SCORE by the new weights and recompute normalization.
+    scoreWeighted = zeros(size(scoreTotal)) ;
+    if strcmp(optimizer,'exp')
         for i = 1:size(weights,1)
             scoreWeighted = scoreWeighted + ...
                 (double(abs(SCORE(:,:,i))).^weights(i,2)) * weights(i,1) ;
         end
-        [scoreTotal,Stats] = colapseScore(scoreWeighted) ;   
+        [scoreTotal,Stats] = colapseScore(scoreWeighted) ; 
+        Stats.weights = weights ;
+        
+    elseif strcmp(optimizer,'RF')
+        for it = 1:size(weight2,1)
+            for it2 = 1:size(weight2,2)
+                scoreWeighted = scoreWeighted + ...
+                    double(SCORE(:,:,it)) .* double(SCORE(:,:,it2)) .* weight2(it,it2) ;
+            end
+        end
+        [scoreTotal,Stats] = colapseScore(scoreWeighted) ; 
+        Stats.weight2 = weight2 ;
+    else
+        % Ensure all weights are positive.
+        weights(weights < 0) = 0 ;
+        
+        for i = 1:length(weights)
+            scoreWeighted = scoreWeighted + ...
+                double(SCORE(:,:,i)) * weights(i) ;
+        end
+        [scoreTotal,Stats] = colapseScore(scoreWeighted) ;          
+        Stats.weights = weights ;
     end
     
-    Stats.weights = weights ;
-    if nargin > 2
+    if nargin > 2 && strcmp(optimizer,'svm')
         Stats.cost = cost ;
         Stats.gamma = gamma ; 
     end

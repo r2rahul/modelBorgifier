@@ -70,6 +70,11 @@ for iField = 1:length(Field.rxn)
        Model.(Field.rxn{iField})(:) = {''};
    else % Field exists, check if the length is correct
        vFieldLength = length(Model.(fieldNames{fieldIndex}));
+       for icell = 1:vFieldLength
+           while iscell(Model.(fieldNames{fieldIndex}){icell})
+               Model.(fieldNames{fieldIndex}){icell} = [Model.(fieldNames{fieldIndex}){icell}{:}] ;
+           end
+       end
        if vFieldLength ~= nRxns ;
            vFieldLength = vFieldLength + 1 ;
            Model.(fieldNames{fieldIndex})(vFieldLength:nRxns) = {''};
@@ -103,6 +108,12 @@ for iField = 1:length(Field.met)
        Model.(Field.met{iField})(:) = {''};
    else % Field exists, check if the length is correct
        vFieldLength = length(Model.(fieldNames{fieldIndex}));
+       % weed out cells in cells
+       for icell = 1:vFieldLength
+           while iscell(Model.(fieldNames{fieldIndex}){icell})
+               Model.(fieldNames{fieldIndex}){icell} = [Model.(fieldNames{fieldIndex}){icell}{:}] ;
+           end
+       end
        if vFieldLength ~= nMets ;
            vFieldLength = vFieldLength + 1 ;
            Model.(fieldNames{fieldIndex})(vFieldLength:nMets) = {''};

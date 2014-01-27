@@ -55,15 +55,22 @@ function [Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,varargin)
 
 %% Declare oft used variables and set up scoring system and arrays.
 
+nCrxns = length(Cmodel.rxns);
+compCrxns = 1:nCrxns ;
+
 % Load Tmodel from file if not provided
 if isempty(varargin)
     load('/home/jts/modeling/models/Tmodel.mat');
 else
     Tmodel = varargin{1};
+    if length(varargin) > 1
+        compCrxns = varargin{2} ;
+    end
+    if length(varargin) > 2
+        score = varargin{3} ;
+    end
 end
 
-% nCrxns = 10 ;
-nCrxns = length(Cmodel.rxns);
 nTrxns = length(Tmodel.rxns) ;
 
 % Names of all models currently in Tmodel.
@@ -93,7 +100,9 @@ ScoreVal = struct('rxnNameH',[10, 1], 'rxnNameM',[-5, 2], ...
                   'rxnNet',[10,40]) ;
 
 % Preallocate score matrix.
-score = zeros(nCrxns,nTrxns,length(fieldnames(ScoreVal)),'int8') ;
+if ~exist('score','var')
+    score = zeros(nCrxns,nTrxns,length(fieldnames(ScoreVal)),'int8') ;
+end
 
 %% Add additional comparison information to models.
 tic
@@ -104,7 +113,7 @@ fprintf('Adding comparison information time = %d.\n', toc)
 %% Score a reaction from Cmodel vs all reactions in Tmodel
 % Name Match
 tic
-for i = 1:nCrxns
+for i = compCrxns
     % Match Cmodel.rxns against Tmodel.rxnIDs.
     matchString = strcat('(:|\<)',Cmodel.rxns(i),'(\||\>)') ;
     match = regexpi(Tmodel.rxnID,matchString) ;
@@ -141,7 +150,7 @@ fprintf('Name match time = %d.\n', toc)
 
 % EC Number match. There is not always an EC Number
 tic
-for i = 1:nCrxns
+for i = compCrxns
     if ~isempty(Cmodel.rxnECNumbers{i}) && ...
             ~isempty(find(~cellfun(@isempty,Tmodel.rxnECNumbers),1))
         pipePos = [0 strfind(Cmodel.rxnECNumbers{i},'|') ...
@@ -168,7 +177,7 @@ fprintf('EC match time = %d.\n', toc)
 
 % Reaction KEGGID match.
 tic
-for iRxn = 1:nCrxns
+for iRxn = compCrxns
     if ~isempty(Cmodel.rxnKEGGID{iRxn}) && ...
             ~isempty(find(~cellfun(@isempty,Tmodel.rxnKEGGID),1))
         pipePos = [0 strfind(Cmodel.rxnKEGGID{iRxn},'|') ...
@@ -197,7 +206,7 @@ fprintf('Reaction KEGG ID match time = %d.\n', toc)
 
 % Reaction SEED ID match.
 tic
-for iRxn = 1:nCrxns
+for iRxn = compCrxns
     if ~isempty(Cmodel.rxnSEEDID{iRxn}) && ...
             ~isempty(find(~cellfun(@isempty,Tmodel.rxnSEEDID),1))
         pipePos = [0 strfind(Cmodel.rxnSEEDID{iRxn},'|') ...
@@ -228,7 +237,7 @@ fprintf('Reaction SEED ID match time = %d.\n', toc)
 tic
 for iM = 1:length(modelNames)
     revLog = logical(Tmodel.rev.(modelNames{iM})) ;
-    for i = 1:nCrxns
+    for i = compCrxns
         if Cmodel.rev(i)
             score(i,revLog,ScoreVal.revH(2)) = ...
                 score(i,revLog,ScoreVal.revH(2)) + ScoreVal.revH(1) ;
@@ -247,7 +256,7 @@ fprintf('Reversibility match time = %d.\n', toc)
 % Subsystem Match. There may not always be a subsystem, but there should
 % never be multiple subsystems in Cmodel.
 tic
-for i = 1:nCrxns
+for i = compCrxns
     if ~isempty(Cmodel.subSystems{i})
         match = regexpi(Tmodel.subSystems, Cmodel.subSystems(i)) ;
         match = ~cellfun(@isempty,match);
@@ -261,7 +270,7 @@ fprintf('Subsystem match time = %d.\n', toc)
 
 % Number and stoic of metabolites, reactants, products match.
 tic
-for i = 1:nCrxns
+for i = compCrxns
     % Total metabolite number.
     % Hits.
     score(i,Cmodel.metNums(i,1) == Tmodel.metNums(:,1), ...
@@ -328,7 +337,7 @@ fprintf('Metabolte number and stoich match time = %d.\n', toc)
 
 % Match compartments involved in reaction
 tic
-for i = 1:nCrxns
+for i = compCrxns
     matchArray = strcmpi(Cmodel.rxnComp{i}, Tmodel.rxnComp) ;
     score(i,matchArray,ScoreVal.rxnCompH(2)) = ...
         score(i,matchArray,ScoreVal.rxnCompH(2)) + ScoreVal.rxnCompH(1) ;
@@ -345,7 +354,7 @@ metType = {'I' 'N' 'F' 'K' 'S'} ;
 metCatH = {'metNameH' 'metNameH' 'metFormH' 'metKEGGH' 'metSEEDH'} ;
 metCatM = {'metNameM' 'metNameM' 'metFormM' 'metKEGGM' 'metSEEDM'} ;
 h = waitbar(0,'Processing metabolites.') ;
-for i = 1:nCrxns
+for i = compCrxns
     % Allocate scoring arrays in a structure
     for iStack = 1:length(metType)
     matchStack.(metType{iStack}) = zeros(nTrxns,3) ;
@@ -368,11 +377,11 @@ for i = 1:nCrxns
                         (matchStack.(metType{iStack})(:,1) == ...
                          matchStack.(metType{iStack})(:,3))), ...
               ScoreVal.metBonus(2)) = ...
-            score(i,logical((matchStack.(metType{iStack})(:,1) == ...
-                             matchStack.(metType{iStack})(:,2)) .* ...
-                            (matchStack.(metType{iStack})(:,1) == ...
-                            matchStack.(metType{iStack})(:,3))), ...
-                  ScoreVal.metBonus(2)) + ScoreVal.metBonus(1);
+        score(i,logical((matchStack.(metType{iStack})(:,1) == ...
+                         matchStack.(metType{iStack})(:,2)) .* ...
+                        (matchStack.(metType{iStack})(:,1) == ...
+                         matchStack.(metType{iStack})(:,3))), ...
+        ScoreVal.metBonus(2)) + ScoreVal.metBonus(1);
         
     % Allocate scores for matches and no matches, divided by number of
     % metabolites in the reaction. 
@@ -400,6 +409,11 @@ end
 try close(h) ; end
 fprintf('Met name match time = %d.\n', toc)
 
+% local network topology
+tic
+score(:,:,ScoreVal.rxnNet(2)) = mapMatch(Cmodel,Tmodel,'noSeed') ;
+fprintf('Network topology match time = %d.\n', toc)
+
 
 %% Colapse the 3D score to scoreTotal and get stats.
 % optimalScores takes the models and score as globals.
@@ -411,26 +425,27 @@ Stats = optimalScores ;
 
 
 %% Graph data.
-hold on
-figure(1)
-subplot(2,1,1)
-hist(Stats.scoreTotal(:),100) % Converting to column matrix is faster.
-title('Normalized score frequency')
-xlabel('Score')
-ylabel('Frequency')
-subplot(2,2,3)
-hist(Stats.bestMatch,100)
-title('Frequency of scores of best match per reaction')
-xlabel('Score')
-ylabel('Frequency');
-subplot(2,2,4)
-imagesc(Stats.scoreTotal)
-colormap('bone')
-title('Matching scores')
-xlabel('Template rxn')
-ylabel('Compared rxn')
-hold off
-
+if length(varargin) < 2
+    hold on
+    figure(1)
+    subplot(2,1,1)
+    hist(Stats.scoreTotal(:),100) % Converting to column matrix is faster.
+    title('Normalized score frequency')
+    xlabel('Score')
+    ylabel('Frequency')
+    subplot(2,2,3)
+    hist(Stats.bestMatch,100)
+    title('Frequency of scores of best match per reaction')
+    xlabel('Score')
+    ylabel('Frequency');
+    subplot(2,2,4)
+    imagesc(Stats.scoreTotal)
+    colormap('bone')
+    title('Matching scores')
+    xlabel('Template rxn')
+    ylabel('Compared rxn')
+    hold off
+end
 end
 
 

@@ -405,6 +405,18 @@ for iMatch = 1:nMatches
     metMatchTable{9,iMatch} = TMODEL.metID{matchIndex(iMatch)} ; 
 end
 
+% weed out accidently remaining cells in cells
+for iac = 1:numel(nowMetDataTable)
+    if iscell(nowMetDataTable{iac})
+        nowMetDataTable{iac} = [nowMetDataTable{iac}{:}] ;
+    end
+end
+for iac = 1:numel(metMatchTable)
+    if iscell(metMatchTable{iac})
+        metMatchTable{iac} = [metMatchTable{iac}{:}] ;
+    end
+end
+
 % If compartment doesn't match or if score is below 0.3
 if ~strcmpi(metMatchTable{3,1},nowMetDataTable{3}) ... 
         || str2double(metMatchTable{1,1}) < 0.3 
@@ -668,4 +680,17 @@ function editNMatches_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+end
+
+
+
+function pushbutton_addinfo_Callback(hObject, eventdata, handles)
+nowmet = get(handles.popup_met,'String') ;
+nowmet = nowmet{get(handles.popup_met,'Value')} ;
+nowmet = regexp(nowmet,',','split') ;
+nowmet = str2double(nowmet{end}) ;
+addMetInfo(nowmet)
+
+popup_met_Callback(handles.popup_met, [], handles)
+
 end

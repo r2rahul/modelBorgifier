@@ -45,9 +45,11 @@ function [TmodelC,Cspawn,Stats, CMODEL] = mergeModels(CmodelIn,TmodelIn, ...
 % optimizeCbModel
 
 %% Declare variables.
-global CMODEL TMODEL
+global SCORE
 CMODEL = CmodelIn ;
 TMODEL = TmodelIn ;
+TmodelC = [] ;
+Cspawn = [] ;
 
 % Allow pausing for some of the UI.
 pause on
@@ -72,13 +74,14 @@ while reviewMets
     % Review all above mets with GUI.
     if ~isempty(reviewMets)
         fprintf('Problems within metList, resolve with GUI.\n')
-        fprintf('Press the any key to continue.\n')
-        pause
-        RxnInfo.rxnIndex = 0 ; % Tells GUI just look at mets.
-        RxnInfo.rxnList = rxnList ;
-        RxnInfo.metList = metList ;
-        RxnInfo.metIndex = reviewMets ;
-        metList = metCompare(RxnInfo) ;
+        reviewMetsAgain = input('Press c to continue anyways or any other key to re-check metabolite matching.\n','s') ;
+        if ~strcmpi(reviewMetsAgain,'c')
+            RxnInfo.rxnIndex = 0 ; % Tells GUI just look at mets.
+            RxnInfo.rxnList = rxnList ;
+            RxnInfo.metList = metList ;
+            RxnInfo.metIndex = reviewMets ;
+            metList = metCompare(RxnInfo) ;
+        end
     end
 end
 
@@ -147,16 +150,22 @@ while checkSimilarity
         fprintf('that do not have the same stoich before and after\n')
         fprintf('merging need to be reviewed again.\n')
         fprintf('Press the any key to continue.\n')
-        pause
+        
         
         % Find the wrong reactions and metabolies,
         % mark them as undeclared, call GUI, and loop.
         
         diffmets = logical(sum(abs(FluxCompare.diffS),2)) ;
         metList(FluxCompare.CmetsSorti(diffmets)) = 0 ;
-        diffrxns= logical(sum(abs(FluxCompare.diffS),1) + sum(FluxCompare.CmodelS(diffmets,:)) + sum(FluxCompare.CspawnS(diffmets,:)) ) ;
+        fprintf('Revisit only [p]roblematic reactions or [a]ll reactions that problematic metabolites are involved in?\n')
+        nowans = input('default = p ','s') ;
+        if strcmp(nowans,'a')
+            diffrxns= logical(sum(abs(FluxCompare.diffS),1) + sum(FluxCompare.CmodelS(diffmets,:)) + sum(FluxCompare.CspawnS(diffmets,:)) ) ;
+        else
+            diffrxns= logical(sum(abs(FluxCompare.diffS),1)) ;
+        end
         rxnList(FluxCompare.CrxnsSorti(diffrxns)) = -1 ;
-        [rxnList, metList, Stats] = reactionCompare(CMODEL,TMODEL,score, rxnList, metList, Stats) ;
+        [rxnList, metList, Stats] = reactionCompare(CMODEL,TMODEL,SCORE, rxnList, metList, Stats) ;
         
     else
         % Set the flag no not check for differences again.

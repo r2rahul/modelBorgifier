@@ -139,6 +139,9 @@ end
 if ~isempty(CMODEL.metKEGGID{cMet})
     fullname = CMODEL.metKEGGID{cMet} ;
     pipePos = [ 0 strfind(fullname,'|') length(fullname)+1 ] ;
+    if iscell(pipePos)
+        pipePos = cell2mat(pipePos) ;
+    end
     matchSum = zeros(length(TMODEL.mets),1) ;
     for i = 1:length(pipePos) - 1
         name = fullname(pipePos(i)+1:pipePos(i+1)-1) ;

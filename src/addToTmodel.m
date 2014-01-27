@@ -340,6 +340,7 @@ for cMet = 1:cMets
         Cinfo = Cmodel.(metFieldNames{iField}){cMet} ;
         Tinfo = Tmodel.(metFieldNames{iField}){tMet} ;
         % Ensure information exists and has not been added
+        try
         if ~isempty(Cinfo) && isempty(strfind(Tinfo,Cinfo))
             % Split information up into parts, only adding new info.
             if ~isempty(Tinfo)
@@ -353,6 +354,9 @@ for cMet = 1:cMets
             else
                 Tinfo = Cinfo ;
             end
+        end
+        catch
+            pause(0.19)
         end
         % Update information, for each field.
         Tmodel.(metFieldNames{iField}){tMet} = Tinfo ;

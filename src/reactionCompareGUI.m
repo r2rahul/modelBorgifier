@@ -218,6 +218,31 @@ fillTables(handles)
 guidata(hObject, handles) ;
 end
 
+% --- Executes on button press in pushbutton_rescore
+function pushbutton_rescore_Callback(hObject, eventdata, handles)
+% update met data
+global CMODEL TMODEL SCORE
+ccopy = CMODEL ;
+metList = handles.metList ;
+metDonePos = logical((metList > 0) .* (metList < length(TMODEL.mets))) ;
+metfields = fieldnames(CMODEL) ;
+metfields = metfields(strncmpi(metfields,'met',3)) ;
+for im = 1:length(metfields)
+    ccopy.(metfields{im})(metDonePos) = TMODEL.(metfields{im})(metList(metDonePos)) ;
+end
+
+% re-calculate score
+nowrx = str2double(get(handles.edit_rxn_num,'String')) ;
+SCORE(nowrx,:,:) = 0 ;
+[~,~,SCORE,Stats] = compareCbModels(ccopy, TMODEL, nowrx, SCORE) ;
+handles.M.scoreTotal = Stats.scoreTotal ;
+
+% update gui
+fillTables(handles) 
+guidata(hObject, handles) ;
+
+end
+
 % --- Executes on button press in pushbutton_choose.
 function pushbutton_choose_Callback(hObject, eventdata, handles)
 global CMODEL
@@ -351,6 +376,24 @@ set(h,'Enable','on')
 fillStats(handles)
 % Update handles
 guidata(hObject, handles)
+end
+
+
+% --- Executes on button press in pushbutton_RF.
+function pushbutton_RF_Callback(hObject, eventdata, handles)
+% Run Random Forest optimizer, with or without parameter optimizer.
+h = findobj(gcf,'Enable','on') ;
+set(h,'Enable','off')
+
+handles.M.Stats = ...
+    optimalScores(handles.rxnList,'RF') ;
+handles.M.scoreTotal = handles.M.Stats.scoreTotal ;
+
+set(h,'Enable','on') 
+fillStats(handles)
+% Update handles
+guidata(hObject, handles)
+
 end
 
 % --- Executes on button press in pushbutton_optFun.
@@ -578,6 +621,9 @@ Data = findRxnMatch(handles.cRxn,handles.nMatch,handles.M.scoreTotal) ;
 nowtable = Data.cRxnTable ;
 for ic = 1:size(nowtable,2)
     for ir = 1:size(nowtable,1)
+        if iscell(nowtable{ir,ic})
+            nowtable{ir,ic} = [nowtable{ir,ic}{:}] ;
+        end
         % add leading whitespace to all cells
         nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
     end
@@ -587,6 +633,9 @@ set(handles.uitable_rxn,'Data', nowtable ) ;
 nowtable = Data.cMetTable([2 3 5 6 7 9 10 12 13 14]) ;
 for ic = 1:size(nowtable,2)
     for ir = 1:size(nowtable,1)
+        if iscell(nowtable{ir,ic})
+            nowtable{ir,ic} = [nowtable{ir,ic}{:}] ;
+        end
         % add leading whitespace to all cells
         nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
     end
@@ -596,6 +645,9 @@ set(handles.uitable_met,'Data', nowtable )
 nowtable = Data.tMetTable([2 3 5 6 7 9 10 12 13 14],:) ;
 for ic = 1:size(nowtable,2)
     for ir = 1:size(nowtable,1)
+        if iscell(nowtable{ir,ic})
+            nowtable{ir,ic} = [nowtable{ir,ic}{:}] ;
+        end
         % add leading whitespace to all cells
         nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
     end

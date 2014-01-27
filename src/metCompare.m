@@ -198,8 +198,14 @@ for iMet = 1:RxnInfo.nMets
     tKegg = TMODEL.metKEGGID{RxnInfo.matches(iMet)} ;
     if ~isempty(cKegg) && ~isempty(tKegg)
         pipePos = [0 strfind(cKegg,'|') length(cKegg)+1] ;
+        if iscell(pipePos)
+            pipePos = cell2mat(pipePos) ;
+        end
         for jID = 1:length(pipePos)-1
             nowID = cKegg(pipePos(jID)+1:pipePos(jID+1)-1) ;
+            if iscell(nowID)
+                nowID = [nowID{:}] ;
+            end
             if ~isempty(strfind(tKegg,nowID))
                 goodMatch(iMet) = 1 ;
             end
@@ -211,8 +217,14 @@ for iMet = 1:RxnInfo.nMets
     tSeed = TMODEL.metSEEDID{RxnInfo.matches(iMet)} ;
     if ~isempty(cSeed) && ~isempty(tSeed)
         pipePos = [0 strfind(cSeed,'|') length(cSeed)+1] ;
+        if iscell(pipePos)
+            pipePos = cell2mat(pipePos) ;
+        end
         for jID = 1:length(pipePos)-1
             nowID = cSeed(pipePos(jID)+1:pipePos(jID+1)-1) ;
+            if iscell(nowID)
+                nowID = [nowID{:}] ;
+            end
             if ~isempty(strfind(tSeed,nowID))
                 goodMatch(iMet) = 1 ;
             end
