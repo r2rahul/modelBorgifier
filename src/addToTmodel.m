@@ -63,19 +63,29 @@ end
 cNameNew = strcat(cName,':') ;
 cNameAdd = strcat('|',cName,':') ;
 
+% Fields which are kept model specific.
+sepFieldNames = ({'rev' 'lb' 'ub' 'c'}) ;
+
 % Reaction related field names, excluding .rxns, .rxnID and .rxnEquation. 
 % anything after getMoDesig does not get a model designation when added.
-rxnFieldNames = ({'grRules' 'subSystems' 'rxnReferences' 'rxnECNumbers' ...
-                  'rxnKEGGID' 'rxnSEEDID' 'rxnNames' 'rxnNotes'}) ;
+
+Tfields = fieldnames(Tmodel) ;
+rxnFields = false(size(Tfields)) ;
+for itf = 1:length(rxnFields)
+    if size(Tmodel.(Tfields{itf}),1) == size(Tmodel.rxns,1) % if size is that of rxns
+        if ~ismember(Tfields{itf}, [sepFieldNames, 'rxns', 'rxnID', 'rxnEquation' 'metNums' 'rxnMetNames']) % exclude some fields
+            rxnFields(itf) = true ;
+        end
+    end
+end
+rxnFieldNames = Tfields(rxnFields) ;
+
 getMoDesig = 4 ; 
 
 % Metabolite related field names, excluding .mets and metID. None get a
 % model designatino.
 metFieldNames = ({'metNames' 'metFormulas' 'metKEGGID' 'metSEEDID' ...
                   'metChEBIID' 'metPubChemID' 'metInChIString'}) ;
-
-% Fields which are kept model specific.
-sepFieldNames = ({'rev' 'lb' 'ub' 'c'}) ;
 
 % Add indentity and number arrays for model being added.
 Tmodel.Models.(cName).rxns = false(length(Tmodel.rxns),1) ;
@@ -110,7 +120,9 @@ if tRxnsNow > tRxns
     Tmodel.rxnID(end+1:tRxnsNow) = {''} ;
     Tmodel.rxnEquations(end+1:tRxnsNow) = {''} ;
     for iField = 1:length(rxnFieldNames)
-       Tmodel.(rxnFieldNames{iField})(end+1:tRxnsNow) = {''} ;
+        if iscell(Tmodel.(rxnFieldNames{iField}))
+            Tmodel.(rxnFieldNames{iField})(end+1:tRxnsNow) = {''} ;
+        end
     end
 
     % Increase length of identity arrays.
@@ -240,11 +252,7 @@ for cRxn = 1:cRxns
        metPos = find(Cmodel.S(:,cRxn)) ;
        metStoics = Cmodel.S(metPos,cRxn) ;
        for iMet = 1:length(metPos)
-           try
            Tmodel.S(metList(metPos(iMet)),tRxn) = metStoics(iMet) ;
-           catch
-               pause(0.1)
-           end
        end
    else
        Tmodel.rxnID{tRxn} = strcat(Tmodel.rxnID{tRxn},cNameAdd, ...
@@ -340,7 +348,6 @@ for cMet = 1:cMets
         Cinfo = Cmodel.(metFieldNames{iField}){cMet} ;
         Tinfo = Tmodel.(metFieldNames{iField}){tMet} ;
         % Ensure information exists and has not been added
-        try
         if ~isempty(Cinfo) && isempty(strfind(Tinfo,Cinfo))
             % Split information up into parts, only adding new info.
             if ~isempty(Tinfo)
@@ -354,10 +361,8 @@ for cMet = 1:cMets
             else
                 Tinfo = Cinfo ;
             end
-        end
-        catch
-            pause(0.19)
-        end
+        end     
+  
         % Update information, for each field.
         Tmodel.(metFieldNames{iField}){tMet} = Tinfo ;
     end

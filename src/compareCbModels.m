@@ -346,6 +346,11 @@ for i = compCrxns
 end
 fprintf('Reaction compartment match time = %d.\n', toc)
 
+% local network topology
+tic
+score(:,:,ScoreVal.rxnNet(2)) = mapMatch(Cmodel,Tmodel,'noSeed') ;
+fprintf('Network topology match time = %d.\n', toc)
+
 % Metabolite ID/name/formula/KEGG/SEED match.
 tic
 % Type of information used for matching arrays (stack).
@@ -408,12 +413,6 @@ for i = compCrxns
 end
 try close(h) ; end
 fprintf('Met name match time = %d.\n', toc)
-
-% local network topology
-tic
-score(:,:,ScoreVal.rxnNet(2)) = mapMatch(Cmodel,Tmodel,'noSeed') ;
-fprintf('Network topology match time = %d.\n', toc)
-
 
 %% Colapse the 3D score to scoreTotal and get stats.
 % optimalScores takes the models and score as globals.
