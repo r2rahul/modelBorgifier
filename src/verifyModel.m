@@ -191,12 +191,14 @@ if isempty(noComp)
 else
     % try to get compartment information from metNames
     nameComp = find(~cellfun(@isempty,regexp(Model.metNames,'\[\w\]$')));
-    for inc = rowvector(nameComp)
-        Model.mets{inc} = [Model.mets{inc} ...
-            Model.metNames{inc}(strfind(Model.metNames{inc},'['): ...
-            strfind(Model.metNames{inc},']')) ];
-        Model.metNames{inc} = ...
-            Model.metNames{inc}(1:strfind(Model.metNames{inc},'[')-1);
+    if ~isempty(nameComp)
+        for inc = rowvector(nameComp)
+            Model.mets{inc} = [Model.mets{inc} ...
+                Model.metNames{inc}(strfind(Model.metNames{inc},'['): ...
+                strfind(Model.metNames{inc},']')) ];
+            Model.metNames{inc} = ...
+                Model.metNames{inc}(1:strfind(Model.metNames{inc},'[')-1);
+        end
     end
     
     noComp = find(cellfun(@isempty,regexp(Model.mets,'\[\w\]$')));

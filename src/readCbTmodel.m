@@ -102,8 +102,10 @@ end
 
 % Remove information from other models for grRules.
 % Find where the rull starts for the model.
-searchStringStart = ['(?<=(^|\|)' modelName ':).*'] ;
-grRulesStart = regexp(Model.grRules,searchStringStart) ;
+% searchStringStart = ['(?<=(^|\|)' modelName ':).*'] ;
+grRulesStart = regexp(Model.grRules, modelName ) ; %searchStringStart) ;
+fixGrRulesStart = @(startpos,shift) not(isempty(startpos)) * (startpos + shift) ;
+grRulesStart = cellfun(@(startpos,shift)fixGrRulesStart(startpos,shift), grRulesStart,repmat({length(modelName) + 1},size(grRulesStart)),'Uniformoutput',false) ;
 ruleIndexes = find(~cellfun(@isempty,grRulesStart)) ;
 % Find where information for other models starts, if it is after the
 % information for this model. 
@@ -136,8 +138,18 @@ end
 
 % Clean up rxnID also. This is really key, beacause we need the original
 % IDs to compare the removed model to the model before it was merged. 
-searchString = ['(?<=(^|\|)' modelName ':)[^\|]*'] ;
-IDs = regexpi(Model.rxnID,searchString,'match') ;
+if ismatlab
+    searchString = ['(?<=(^|\|)' modelName ':)[^\|]*'] ;
+    IDs = regexpi(Model.rxnID,searchString,'match') ;
+else
+    for ir = 1:length(Model.rxnID)
+        nowID = Model.rxnID{ir} ;
+        startpos = min(strfind(nowID,modelName) + length(modelName) + 1) ;
+        endpos =   strfind(nowID,'|') -1 ;
+        endpos = min(endpos(endpos > startpos)) ;
+        IDs{ir} = nowID(startpos:endpos) ;
+    end
+end
 IDIndexes = find(~cellfun(@isempty,IDs)) ; 
 for iRxn = 1:length(IDIndexes) 
     Model.rxnID{IDIndexes(iRxn)} = char(IDs{iRxn}) ;
@@ -153,8 +165,18 @@ for iF = 1:length(mNumFields)
 end
 
 % Clean up metID
-searchString = ['(?<=(^|\|)' modelName ':)[^\|]*'] ;
-IDs = regexpi(Model.metID,searchString,'match') ;
+if ismatlab
+    searchString = ['(?<=(^|\|)' modelName ':)[^\|]*'] ;
+    IDs = regexpi(Model.metID,searchString,'match') ;
+else
+    for ir = 1:length(Model.metID)
+        nowID = Model.metID{ir} ;
+        startpos = min(strfind(nowID,modelName) + length(modelName) + 1) ;
+        endpos =   strfind(nowID,'|') -1 ;
+        endpos = min(endpos(endpos > startpos)) ;
+        IDs{ir} = nowID(startpos:endpos) ;
+    end
+end
 IDIndexes = find(~cellfun(@isempty,IDs)) ; 
 for iMet = 1:length(IDIndexes) 
     Model.metID{IDIndexes(iMet)} = char(IDs{iMet}) ;

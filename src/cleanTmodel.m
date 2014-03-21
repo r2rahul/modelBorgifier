@@ -232,7 +232,7 @@ if ismember(beautifynames,{'y', 'a', 'Y', 'A'})
                 [~, goodids] = min((tailnum+2)./(2*idfreq)) ;
                 % check that the name is not already taken
                 if sum(strcmp(Tmodel.rxns, nowIDalt{goodids})) == 0 && ...
-                   length(Tmodel.rxns{ir}(max(find(charpos(Tmodel.rxns{ir}) ) ):end)) > 4
+                   length(Tmodel.rxns/home/jrb/projdata/Proj SMP/Primaerdaten/modeling/common{ir}(max(find(charpos(Tmodel.rxns{ir}) ) ):end)) > 4
                     if askeverytime
                         replacethistime = input(['Should I rename '  Tmodel.rxns{ir}  ' to '...
                                              nowIDalt{goodids} ' (y/n)?'], 's') ;

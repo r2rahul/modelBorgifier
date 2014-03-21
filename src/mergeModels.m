@@ -109,6 +109,7 @@ while checkSimilarity
         nowmets = setdiff(find(FluxCompare.CmodelS(:,ir)) ,...
             find(strncmp( Cspawn.mets(FluxCompare.SmetsSorti),'h[',2)) ); % ignore protons
         relativeDirection = relativeDirection(nowmets)  ;
+        relativeDirection = relativeDirection(logical(~isinf(relativeDirection) .* ~isnan(relativeDirection))) ;
         if ~isempty(nowmets)
             if mean(relativeDirection) == 1
                 if ~CMODEL.lb(FluxCompare.CrxnsSorti(ir)) == Cspawn.lb(FluxCompare.SrxnsSorti(ir)) || ...
