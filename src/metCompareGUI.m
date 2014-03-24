@@ -200,8 +200,14 @@ switch choice
         end
         RxnInfo.matches(RxnInfo.nowMet) = 0 ;
     case 'chooseOther'
-        RxnInfo.matches(RxnInfo.nowMet) = ...
-            str2double(get(handles.chooseOtherNo,'String')) ;
+         newRxnIndex = str2double(get(handles.chooseOtherNo,'String')) ;
+         if newRxnIndex > 0
+             RxnInfo.matches(RxnInfo.nowMet)
+         else
+             set(handles.errorField,'String',...
+                'Please enter a valid Rxn number')
+             return
+         end
     otherwise
 end
 
