@@ -91,10 +91,14 @@ end
 % Match against IDs for all models.
 match = regexpi(TMODEL.metID,name) ;
 match = ~cellfun(@isempty,match) ;
+% give exptra points for exact matches
+matchExact = regexpi(TMODEL.metID,[':' name '[']) ;
+matchExact = ~cellfun(@isempty,matchExact) ;
 % If at least one match was found, change flag and give scores.
 if ~isempty(find(match,1)) ; 
     hit = 1 ;
     metScores(match) = metScores(match) + ScoreVal.ID(1) ;
+    metScores(matchExact) = metScores(matchExact) + ScoreVal.ID(1) ;
 end
 
 % Match against compartment for all models.
@@ -104,19 +108,21 @@ metScores(~match) = metScores(~match) + ScoreVal.compartment(2) ;
 
 % metNames Match. There can be multiple names.
 fullname = CMODEL.metNames{cMet} ;
-pipePos = [0 strfind(fullname,'|') length(fullname)+1 ] ;
-matchSum = zeros(length(TMODEL.mets),1) ;
-for i = 1:length(pipePos) - 1
-    name = fullname(pipePos(i)+1:pipePos(i+1)-1) ;
-    name = strcat('(\||\<)',name,'(\>|\|)') ;
-    match = regexpi(TMODEL.metNames,name) ;
-    match = ~cellfun('isempty',match) ;
-    matchSum = matchSum + match ;
-end
-match = logical(matchSum) ;
-if ~isempty(find(match,1)) ; 
-    hit = 1 ;
-    metScores(match) = metScores(match) + ScoreVal.name(1) ;
+if ~isempty(fullname)
+    pipePos = [0 strfind(fullname,'|') length(fullname)+1 ] ;
+    matchSum = zeros(length(TMODEL.mets),1) ;
+    for i = 1:length(pipePos) - 1
+        name = fullname(pipePos(i)+1:pipePos(i+1)-1) ;
+        name = strcat('(\||\<)',name,'(\>|\|)') ;
+        match = regexpi(TMODEL.metNames,name) ;
+        match = ~cellfun('isempty',match) ;
+        matchSum = matchSum + match ;
+    end
+    match = logical(matchSum) ;
+    if ~isempty(find(match,1)) ;
+        hit = 1 ;
+        metScores(match) = metScores(match) + ScoreVal.name(1) ;
+    end
 end
 
 % metFormula Match. There will always be one Formula.
