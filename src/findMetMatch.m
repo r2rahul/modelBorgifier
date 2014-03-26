@@ -1,18 +1,3 @@
-% this file is published under Creative Commons BY-NC-SA
-% 
-% Assimilating genome-scale metabolic reconstructions with modelBorgifier
-% in preparation
-%
-% John T. Sauls and Joerg M. Buescher
-% BRAIN Aktiengesellschaft
-% Microbial Production Technologies Unit
-% Quantitative Biology and Sequencing Platform
-% Darmstaeter Str. 34-36
-% 64673 Zwingenberg, Germany
-% www.brain-biotech.de
-% jrb@brain-biotech.de
-% 
-%
 function [matchScores,matchIndex,varargout] = findMetMatch(cMet,varargin)
 %findMetMatch Finds find possible matches for a given metabolite.
 %
@@ -41,6 +26,21 @@ function [matchScores,matchIndex,varargout] = findMetMatch(cMet,varargin)
 %CALLED BY
 % metCompare
 % metCompareGUI
+%
+% this file is published under Creative Commons BY-NC-SA
+% 
+% Assimilating genome-scale metabolic reconstructions with modelBorgifier
+% in preparation
+%
+% John T. Sauls and Joerg M. Buescher
+% BRAIN Aktiengesellschaft
+% Microbial Production Technologies Unit
+% Quantitative Biology and Sequencing Platform
+% Darmstaeter Str. 34-36
+% 64673 Zwingenberg, Germany
+% www.brain-biotech.de
+% jrb@brain-biotech.de
+% 
 %
 
 %% Declare variables and scoring structure.
@@ -202,10 +202,10 @@ else
 end
 
 %% Take some metabolites out of the running.
-% If tRxn is provided, then reduce all scores for noninvolved mets by 90%.
+% If tRxn is provided, then reduce all scores for noninvolved mets to 0.
 if tRxn > 0
     metScores(TMODEL.S(:,tRxn) == 0) ...
-        = metScores(TMODEL.S(:,tRxn) == 0) * 0.1 ;
+        = metScores(TMODEL.S(:,tRxn) == 0) * 0;
 end
 
 % Reduce scores of metabolites that don't have the right compartment.

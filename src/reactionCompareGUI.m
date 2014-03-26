@@ -251,14 +251,16 @@ selectedRxn = str2double(get(handles.edit_select_match,'String')) ;
 if ~isnan(selectedRxn)
     % If the reaction has not already been declared. 
     if isempty(find(handles.rxnList == selectedRxn,1))
+        handles.rxnList(handles.cRxn) = selectedRxn ;
+        
         % Compare metabolites from reaction.
         handles.metList = prepareMetCompare(handles) ; 
         
         % check that none of the metabolites of the reaction has been declared new
         if sum(handles.metList(CMODEL.S(:,handles.cRxn) ~= 0) == 0) > 0
             set(handles.text_error,'String','Rxn cannot be matched, it contains unmatched metabolites') ;
+            handles.rxnList(handles.cRxn) = -1 ;
         else
-            handles.rxnList(handles.cRxn) = selectedRxn ;
             set(handles.text_error,'String','Alles Klar') ;
             
             % Recompute stats (pie chart).
