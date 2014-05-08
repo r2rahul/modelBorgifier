@@ -45,7 +45,7 @@ function [TmodelC,Cspawn,Stats, CMODEL] = mergeModels(CmodelIn,TmodelIn, ...
 % optimizeCbModel
 
 %% Declare variables.
-global SCORE
+global SCORE CMODEL TMODEL
 CMODEL = CmodelIn ;
 TMODEL = TmodelIn ;
 TmodelC = [] ;
