@@ -101,5 +101,15 @@ Tmodel.ub = ub ;
 Tmodel.c = c ;
 Tmodel.genes = genes ;
 
+% Add Tmodel.description
+if ~strcmp(prefModel,'none')
+    Tmodel.description = prefModel ;
+else
+    Tmodel.description = 'newModel' ;
+end
+
+% Remove excess fields
+Tmodel = rmfield(Tmodel,'Models') ;
+
 Tmodel = buildRxnEquations(Tmodel) ;
 

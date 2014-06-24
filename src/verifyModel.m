@@ -35,6 +35,11 @@ function Model = verifyModel(Model,varargin)
 % orderModelFields
 % organizeModelCool
 
+%% check if model is a model collection (a Tmodel)
+if isfield(Model, 'Models')
+    error('verifyModel is only good for models in openCOBRA compatible format, not for collections of models (Tmodels).')
+end
+
 %% Declare variables.
 askForModelName = true ;
 if ~isempty(varargin)
