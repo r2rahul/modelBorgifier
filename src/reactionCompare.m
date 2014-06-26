@@ -49,7 +49,7 @@ function [rxnList,metList,Stats] = reactionCompare(CmodelIn,TmodelIn, ...
 %% Declare variables
 % Make the inputs variables so they can be easily accessed by downstream
 % scripts. None of these variables are edited by any of these scripts. 
-global CMODEL TMODEL SCORE
+global CMODEL TMODEL SCORE METNAMEMATCH
 CMODEL = CmodelIn ;
 TMODEL = TmodelIn ; 
 SCORE = scoreIn ;
@@ -64,17 +64,31 @@ end
 
 % Was metList supplied?
 if nargin >= 5
-    metList = varargin{2} ;
+    if ~isempty(varargin{2})
+        metList = varargin{2} ;
+    else
+        metList = zeros(length(CMODEL.mets),1) ;
+    end
 else
     metList = zeros(length(CMODEL.mets),1) ;
 end
 
 % How 'bout rxnList?
-if nargin > 3
-    rxnList = varargin{1} ;
+if nargin >= 4
+    if ~isempty(varargin{1})
+        rxnList = varargin{1} ;
+    else
+        rxnList = ones(length(CMODEL.rxns),1)*-1 ;
+    end
 else
     rxnList = ones(length(CMODEL.rxns),1)*-1 ;
 end
+
+% How about metNameMatch?
+if nargin >= 6
+    METNAMEMATCH = varargin{4} ;
+end
+    
 
 %% Manual reaction comparison.
 

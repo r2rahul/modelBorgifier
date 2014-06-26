@@ -113,9 +113,9 @@ end
 
 % List unseen metabolites.
 if handles.RxnInfo.rxnIndex
-  handles.RxnInfo.unseen = ~handles.RxnInfo.goodMatch ;
+    handles.RxnInfo.unseen = ~handles.RxnInfo.goodMatch ;
 else
-    % It just comparing metabolites, do not mark any as seen.
+    % If just comparing metabolites, do not mark any as seen.
     handles.RxnInfo.unseen = ones(handles.RxnInfo.nMets,1) ;
 end
 

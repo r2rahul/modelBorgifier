@@ -13,7 +13,7 @@
 % jrb@brain-biotech.de
 % 
 %
-function [Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,varargin)
+function [Cmodel,Tmodel,score,Stats,metNameMatch] = compareCbModels(Cmodel,varargin)
 % [Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,[Tmodel])
 %
 %compareCbModels Calculate similarity of two Cb models. These models must
@@ -39,6 +39,7 @@ function [Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,varargin)
 %                 to the number of reactions in Cmodel and N equal to the 
 %                 number of reactions in Tmodel.
 %   bestMatch     The best match from Tmodel for each reaction in Cmodel. 
+% metNameMatch    Name similarity pairwise between metabolite names
 %
 %CALLS
 % optimalScores
@@ -412,7 +413,7 @@ for i = compCrxns
     end
 end
 try close(h) ; end
-fprintf('Met name match time = %d.\n', toc)
+fprintf('Mets per reaction name match time = %d.\n', toc)
 
 %% Colapse the 3D score to scoreTotal and get stats.
 % optimalScores takes the models and score as globals.
@@ -421,6 +422,22 @@ CMODEL = Cmodel ;
 TMODEL = Tmodel ; 
 SCORE = score ; 
 Stats = optimalScores ;
+
+%% do comparison of metabolites
+
+tic
+nTmets = length(TMODEL.mets) ;
+nCmets = length(CMODEL.mets) ;
+metNameMatch = zeros(nCmets,nTmets) ;
+
+for imt = 1:nTmets
+    for imc = 1:nCmets
+        metNameMatch(imc,imt) = stringSimilarityForward([TMODEL.mets{imt} TMODEL.metNames{imt}] , [CMODEL.mets{imc} CMODEL.metNames{imc}], 3) ;
+    end
+    waitbar(imt / nTmets) ;
+end
+
+fprintf('Met vs met name match time = %d.\n', toc)
 
 
 %% Graph data.

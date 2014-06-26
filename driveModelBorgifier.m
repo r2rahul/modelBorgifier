@@ -72,18 +72,18 @@ end
 
 %% Compare models. 
 % Score Cmodel against Tmodel. This can taken a few hours. 
-[Cmodel,Tmodel,score,Stats] = compareCbModels(Cmodel,Tmodel);
+[Cmodel,Tmodel,score,Stats,metNameMatch] = compareCbModels(Cmodel,Tmodel);
 
 %% Match models.
 % Initial comparison and matching.
-[rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score);
+[rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score,[],[],[],metNameMatch);
 
 % OPTIONAL. Declare mets from Cmodel with comps not in Tmodel as new.
 metList = newCompsNewMets(metList,Cmodel,Tmodel);
 
 % Subsequent comparisons and matching. 
 [rxnList,metList,Stats] = reactionCompare(Cmodel,Tmodel,score, ...
-                                          rxnList,metList,Stats);
+                                          rxnList,metList,Stats,metNameMatch);
 
 %% Double-check matching. 
 % If you are unsure about the correctness of the matching you may want to 

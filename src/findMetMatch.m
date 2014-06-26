@@ -5,12 +5,14 @@ function [matchScores,matchIndex,varargout] = findMetMatch(cMet,varargin)
 %
 %
 %INPUTS
-% cMet      Metabolite number (relative to CMODEL) metabolite to be
-%           compared.
+% cMet          Metabolite number (relative to CMODEL) metabolite to be
+%               compared.
 %
 %OPTIONAL INPUTS
-% tRxn      The reaction from TMODEL that this metabolite's reaction is
-%           matched.
+% tRxn          The reaction from TMODEL that this metabolite's reaction is
+%               matched.
+% metNameMatch  The matix of name similarity scores computed by
+%               compareCbModels
 %
 %GLOBAL INPUTS
 % CMODEL
@@ -27,30 +29,20 @@ function [matchScores,matchIndex,varargout] = findMetMatch(cMet,varargin)
 % metCompare
 % metCompareGUI
 %
-% this file is published under Creative Commons BY-NC-SA
-% 
-% Assimilating genome-scale metabolic reconstructions with modelBorgifier
-% in preparation
-%
-% John T. Sauls and Joerg M. Buescher
-% BRAIN Aktiengesellschaft
-% Microbial Production Technologies Unit
-% Quantitative Biology and Sequencing Platform
-% Darmstaeter Str. 34-36
-% 64673 Zwingenberg, Germany
-% www.brain-biotech.de
-% jrb@brain-biotech.de
-% 
-%
+
 
 %% Declare variables and scoring structure.
-global CMODEL TMODEL 
+global CMODEL TMODEL METNAMEMATCH
 
 % Declare matched reaction, if any.
 if ~isempty(varargin)
     tRxn = cell2mat(varargin(1)) ;
 else
     tRxn = 0 ;
+end
+
+if isempty(METNAMEMATCH)
+    METNAMEMATCH = zeros(length(CMODEL.mets),length(TMODEL.mets)) ;
 end
 
 % Score values.
@@ -180,13 +172,19 @@ if ~isempty(CMODEL.metSEEDID{cMet})
     end
 end
 
+% name similarity match
+metScores = metScores + METNAMEMATCH(cMet,:) ;
+if sum(METNAMEMATCH(cMet,:)) > 0
+    hit = 1 ;
+end
+
 %% Normalize scores.
 % remove negative scores
 metScores(metScores < 0) = 0 ;
 
 % if nothing was found yet, try to find anything remotely similar in name
 % or ID
-if hit == 0
+if (hit == 0) && (sum(METNAMEMATCH(cMet,:)) == 0)
     for itmets = find(metScores > 0)
         metScores(itmets) = metScores(itmets) + stringSimilarityForward(TMODEL.metNames{itmets}, CMODEL.metNames{cMet},3) ;
         waitbar(itmets / sum(metScores > 0)) ;
@@ -223,23 +221,5 @@ end
 varargout = cell(1) ; 
 varargout{1} = hit ;
 
-function score = stringSimilarityForward(input1, input2, wordsize)
-% compares the similarity of two strings and returns a score between 0 (not
-% similar and 1 (identical)
 
-% shortcut if input 1 and input 2 are identical
-if strcmp(input1, input2)
-    score = 1 ;
-    return
-end
-
-score = zeros(length(input1)-wordsize,1) ;
-for i1 = 1:length(input1)-wordsize
-    for i2 = 1:length(input2)-wordsize
-        score(i1) = score(i1) + strcmpi(input1(i1:i1+wordsize), input2(i2:i2+wordsize)) ;
-    end
-end
-score = mean(score ./ max(score)) ;
-
-score(isnan(score)) = 0 ;
 

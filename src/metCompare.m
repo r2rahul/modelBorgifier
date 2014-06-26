@@ -145,8 +145,8 @@ for iMet = 1:RxnInfo.nMets
    RxnInfo.metData(5,iMet) = CMODEL.metKEGGID(RxnInfo.metIndex(iMet)) ;
    RxnInfo.metData(6,iMet) = CMODEL.metSEEDID(RxnInfo.metIndex(iMet)) ;
    RxnInfo.metData(7,iMet) = CMODEL.metID(RxnInfo.metIndex(iMet)) ; 
-   [RxnInfo.matchScores{iMet}, RxnInfo.matchIndex{iMet}, hit] = findMetMatch(RxnInfo.metIndex(iMet),... 
-                                       RxnInfo.rxnMatch) ;
+   [RxnInfo.matchScores{iMet}, RxnInfo.matchIndex{iMet}, hit] = ... 
+                      findMetMatch(RxnInfo.metIndex(iMet),RxnInfo.rxnMatch) ;
    RxnInfo.metDataInfo = {'ID' ; 'Name'; 'Formula'; 'Charge'; 'KEGGid'; 'SEEDid'; 'oldID'} ; 
    % Assign best match, but if no hit was found change it to zero.
    RxnInfo.matches(iMet) = RxnInfo.matchIndex{iMet}(1) ;                        
