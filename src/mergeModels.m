@@ -14,7 +14,7 @@
 %
 %
 function [TmodelC,Cspawn,Stats, CMODEL] = mergeModels(CmodelIn,TmodelIn, ...
-    rxnList,metList,Stats,score)
+    rxnList,metList,Stats, scoreIn)
 % mergeModels checks Tmodel for duplicate reactions and other mistakes,
 % that may have occured during reaction and metabolite matching. It
 % resolves these problems and merges the models, and confirms that Cmodel
@@ -22,7 +22,7 @@ function [TmodelC,Cspawn,Stats, CMODEL] = mergeModels(CmodelIn,TmodelIn, ...
 % some statistics on the merging process and resulting combined model.
 %
 % [TmodelC,Cspawn,Stats] = mergeModels(CmodelIn,TmodelIn, ...
-%                                         rxnList,metList,Stats)
+%                                         rxnList,metList,Stats,scoreIn)
 %
 %INPUT
 % Cmodel
@@ -31,6 +31,7 @@ function [TmodelC,Cspawn,Stats, CMODEL] = mergeModels(CmodelIn,TmodelIn, ...
 % metList
 % Stats     Structure that comes from reactionCompare. Weighting
 %           information can be used and additional information addended.
+% scoreIn   3-d-matrix created by compareCbModels
 %
 %OUTPUT
 % TmodelC   Combined C and Tmodel.
@@ -45,9 +46,10 @@ function [TmodelC,Cspawn,Stats, CMODEL] = mergeModels(CmodelIn,TmodelIn, ...
 % optimizeCbModel
 
 %% Declare variables.
-global SCORE CMODEL TMODEL
+global SCORE  TMODEL CMODEL
 CMODEL = CmodelIn ;
 TMODEL = TmodelIn ;
+SCORE = scoreIn ;
 TmodelC = [] ;
 Cspawn = [] ;
 
@@ -88,6 +90,13 @@ end
 % Force good numbering for new metabolites
 TmetNum = length(TMODEL.mets) ;
 metList(metList > TmetNum) = TmetNum+(1:sum(metList>TmetNum)) ;
+
+%% check that rxnList is ok
+while any(rxnList < 0)
+    fprintf('Problems within rxnList, resolve with GUI.\n')
+    [rxnList,metList,Stats] = reactionCompare(CMODEL,TMODEL,SCORE,rxnList,metList,Stats);
+    
+end
 
 %% Reconsider
 
@@ -179,7 +188,7 @@ while checkSimilarity
     Stats.metList = metList ;
 end
 catch % return savely if re-matching is aborted by user
-    return
+    fprintf('Checking of matrix equality terminated.\n')
 end
 
 %% Checking flux calculations.
@@ -189,6 +198,65 @@ if ~(find(CMODEL.c(FluxCompare.CrxnsSorti)) == ...
     fprintf('Objective function index not conserved after merging\n')
 end
 
+solverOK = changeCobraSolver('glpk','LP') ;
+if ~solverOK
+    fprintf('LP solver is not set correctly\n')
+end
+
+% Testing flux that comes out.
+try
+    FBACmodel = optimizeCbModel(CMODEL,'max','one') ;
+    FBACspawn = optimizeCbModel(Cspawn,'max','one') ;
+
+    % Order the flux values so they can be easily compared.
+    FBACmodel.xSort = FBACmodel.x(FluxCompare.CrxnsSorti) ;
+    FBACspawn.xSort = FBACspawn.x(FluxCompare.SrxnsSorti) ;
+
+    % Difference in fluxes.
+    FluxCompare.fluxDiff = abs(FBACmodel.xSort - FBACspawn.xSort) ;
+    FluxCompare.fluxDiff(FluxCompare.fluxDiff < 1e-7) = 0  ;
+catch
+    fprintf('Cannot compute fluxes.\n')
+end
+
+% If the flux values
+if (FBACmodel.f ~= FBACspawn.f) || ~isempty(find(FluxCompare.fluxDiff,1))
+    fprintf('Fluxes not the same. Check Stats.FBAoverview\n')
+    [~, csort] = sort(abs(FBACmodel.x),'descend') ;
+    [~, ssort] = sort(abs(FBACspawn.x),'descend') ;
+    Stats.FBAoverview = [CMODEL.rxns(csort) CMODEL.rxnEquations(csort) num2cell(FBACmodel.x(csort)) ...
+        Cspawn.rxns(ssort) Cspawn.rxnEquations(ssort) num2cell(FBACspawn.x(ssort)) ] ;
+else
+    fprintf('Flux test failed.\n')
+end
+
+Stats.FluxCompare = FluxCompare ;
+Stats.FBACmodel = FBACmodel ;
+Stats.FBACspawn = FBACspawn ;
+
+%% Organize and Get stats on combined Tmodel.
+TmodelC = cleanTmodel(TmodelC) ;
+try
+    TmodelC = organizeModelCool(TmodelC) ;
+catch
+    disp('TmodelC too large for cool organization of stoichiometric matrix')
+end
+Cspawn = readCbTmodel(CMODEL.description,TmodelC) ;
+Stats = TmodelStats(TmodelC,Stats) ;
+end
+
+%% Subfunctions.
+% Combines C and Tmodel and pulls C back out, returns the merge and spawn.
+function [TmodelC,Cspawn,CMODEL] = mergeAndSpawn(CMODEL,TMODEL,rxnList,metList)
+% Combine the models.
+[TmodelC, CMODEL] = addToTmodel(CMODEL,TMODEL,rxnList,metList,'NoClean') ;
+
+% Create Cmodel again from the combined model.
+Cspawn = readCbTmodel(CMODEL.description,TmodelC) ;
+end
+
+
+%% backup code
 % % % % Are bounds the same?
 % % % problemspersist = true ;
 % % % while problemspersist
@@ -231,58 +299,3 @@ end
 % % %     Stats.rxnList = rxnList ;
 % % %     Stats.metList = metList ;
 % % % end
-
-solverOK = changeCobraSolver('glpk','LP') ;
-if ~solverOK
-    fprintf('LP solver is not set correctly\n')
-end
-
-% Testing flux that comes out.
-try
-    FBACmodel = optimizeCbModel(CMODEL,'max','one') ;
-    FBACspawn = optimizeCbModel(Cspawn,'max','one') ;
-
-    % Order the flux values so they can be easily compared.
-    FBACmodel.xSort = FBACmodel.x(FluxCompare.CrxnsSorti) ;
-    FBACspawn.xSort = FBACspawn.x(FluxCompare.SrxnsSorti) ;
-
-    % Difference in fluxes.
-    FluxCompare.fluxDiff = abs(FBACmodel.xSort - FBACspawn.xSort) ;
-    FluxCompare.fluxDiff(FluxCompare.fluxDiff < 1e-7) = 0  ;
-catch
-    return
-end
-
-% If the flux values
-if (FBACmodel.f ~= FBACspawn.f) || ~isempty(find(FluxCompare.fluxDiff,1))
-    fprintf('Fluxes not the same. Check Stats.FBAoverview\n')
-    [~, csort] = sort(abs(FBACmodel.x),'descend') ;
-    [~, ssort] = sort(abs(FBACspawn.x),'descend') ;
-    Stats.FBAoverview = [CMODEL.rxns(csort) CMODEL.rxnEquations(csort) num2cell(FBACmodel.x(csort)) ...
-        Cspawn.rxns(ssort) Cspawn.rxnEquations(ssort) num2cell(FBACspawn.x(ssort)) ] ;
-end
-
-Stats.FluxCompare = FluxCompare ;
-Stats.FBACmodel = FBACmodel ;
-Stats.FBACspawn = FBACspawn ;
-
-%% Organize and Get stats on combined Tmodel.
-TmodelC = cleanTmodel(TmodelC) ;
-try
-    TmodelC = organizeModelCool(TmodelC) ;
-catch
-    disp('TmodelC too large for cool organization of stoichiometric matrix')
-end
-Cspawn = readCbTmodel(CMODEL.description,TmodelC) ;
-Stats = TmodelStats(TmodelC,Stats) ;
-end
-
-%% Subfunctions.
-% Combines C and Tmodel and pulls C back out, returns the merge and spawn.
-function [TmodelC,Cspawn,CMODEL] = mergeAndSpawn(CMODEL,TMODEL,rxnList,metList)
-% Combine the models.
-[TmodelC, CMODEL] = addToTmodel(CMODEL,TMODEL,rxnList,metList,'NoClean') ;
-
-% Create Cmodel again from the combined model.
-Cspawn = readCbTmodel(CMODEL.description,TmodelC) ;
-end

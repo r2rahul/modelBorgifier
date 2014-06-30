@@ -431,9 +431,11 @@ nCmets = length(CMODEL.mets) ;
 metNameMatch = zeros(nCmets,nTmets) ;
 
 for imt = 1:nTmets
+    tic
     for imc = 1:nCmets
         metNameMatch(imc,imt) = stringSimilarityForward([TMODEL.mets{imt} TMODEL.metNames{imt}] , [CMODEL.mets{imc} CMODEL.metNames{imc}], 3) ;
     end
+    toc
     waitbar(imt / nTmets) ;
 end
 

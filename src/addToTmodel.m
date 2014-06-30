@@ -240,7 +240,6 @@ for cRxn = 1:cRxns
    
    % Update identity array
    Tmodel.Models.(cName).rxns(tRxn) = true ;
-
    % For new reactions, add their name from Cmodel and adjust S matrix. 
    if isempty(Tmodel.rxns{tRxn})
        Tmodel.rxns{tRxn} = Cmodel.rxns{cRxn} ;

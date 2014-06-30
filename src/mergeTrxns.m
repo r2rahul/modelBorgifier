@@ -62,7 +62,8 @@ for i = 1:length(mergerxns)
             end
             Tmodel.ub.(modelfields{im})(mergerxns{i}(1)) = nowub ;
         elseif mergerxnsratio(i) < 0
-            nowlb = [Tmodel.lb.(modelfields{im})(mergerxns{i}(1)) Tmodel.ub.(modelfields{im})(mergerxns{i}(2:end)) ] ;
+            nowlb = [Tmodel.lb.(modelfields{im})(mergerxns{i}(1)) ,...
+                     rowvector(Tmodel.ub.(modelfields{im})(mergerxns{i}(2:end)) )] ;
             nowlb(2:end) = nowlb(2:end) ./ mergerxnsratio(i) ;            
             nowlb = nowlb(nowlb ~= 0) ;
             if isempty(nowlb)
@@ -72,7 +73,8 @@ for i = 1:length(mergerxns)
             end
             Tmodel.lb.(modelfields{im})(mergerxns{i}(1)) = nowlb ;
             
-            nowub = [Tmodel.ub.(modelfields{im})(mergerxns{i}(1)) Tmodel.lb.(modelfields{im})(mergerxns{i}(2:end)) ] ;
+            nowub = [Tmodel.ub.(modelfields{im})(mergerxns{i}(1)) ,...
+                     rowvector(Tmodel.lb.(modelfields{im})(mergerxns{i}(2:end))) ] ;
             nowub(2:end) = nowub(2:end) ./ mergerxnsratio(i) ;            
             nowub = nowub(nowub ~= 0) ;
             if isempty(nowub)

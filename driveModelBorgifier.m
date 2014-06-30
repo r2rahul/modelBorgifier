@@ -112,7 +112,7 @@ Stats.bestMatch(newRxn(newRxnScoreIdx(1:10)))
 
 %% Merge models and test results.
 [TmodelC,Cspawn,Stats] = mergeModels(Cmodel,Tmodel, ...
-                                      rxnList,metList,Stats);
+                                      rxnList,metList,Stats,score);
 
 %% Extract a model. 
 modelToExtract = 'iJO1366'; % Note this name must match the name in Tmodel.

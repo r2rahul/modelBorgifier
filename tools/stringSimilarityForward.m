@@ -37,12 +37,13 @@ if strcmp(input1, input2)
     return
 end
 
+li2 = length(input2)-wordsize ;
 score = zeros(length(input1)-wordsize,1) ;
 for i1 = 1:length(input1)-wordsize
-    for i2 = 1:length(input2)-wordsize
-        score(i1) = score(i1) + strcmpi(input1(i1:i1+wordsize), input2(i2:i2+wordsize)) ;
+    for i2 = 1:li2
+        score(i1) = strcmpi(input1(i1:i1+wordsize), input2(i2:i2+wordsize)) ;
     end
 end
-score = mean(score ./ max(score)) ;
+score = mean(score) / max(score) ;
 
 score(isnan(score)) = 0 ;

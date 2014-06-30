@@ -54,23 +54,17 @@ CMODEL = CmodelIn ;
 TMODEL = TmodelIn ; 
 SCORE = scoreIn ;
 
-% Need scoreTotal now to create rxnList if Stats is not provided.
-if nargin <= 5
-%     Stats = optimalScores(CMODEL,TMODEL,SCORE) ;
-    Stats = optimalScores ;
-else
-    Stats = varargin{3} ;
+if isempty(SCORE)
+    fprintf('Cannot proceed with reactionCompare becuase SCORE is empty.\n')
+    return
 end
-
-% Was metList supplied?
-if nargin >= 5
-    if ~isempty(varargin{2})
-        metList = varargin{2} ;
-    else
-        metList = zeros(length(CMODEL.mets),1) ;
-    end
-else
-    metList = zeros(length(CMODEL.mets),1) ;
+if isempty(TMODEL)
+    fprintf('Cannot proceed with reactionCompare becuase TMODEL is empty.\n')
+    return
+end
+if isempty(CMODEL)
+    fprintf('Cannot proceed with reactionCompare becuase CMODEL is empty.\n')
+    return
 end
 
 % How 'bout rxnList?
@@ -84,8 +78,27 @@ else
     rxnList = ones(length(CMODEL.rxns),1)*-1 ;
 end
 
-% How about metNameMatch?
+% Was metList supplied?
+if nargin >= 5
+    if ~isempty(varargin{2})
+        metList = varargin{2} ;
+    else
+        metList = zeros(length(CMODEL.mets),1) ;
+    end
+else
+    metList = zeros(length(CMODEL.mets),1) ;
+end
+
+% Need scoreTotal now to create rxnList if Stats is not provided.
 if nargin >= 6
+%     Stats = optimalScores(CMODEL,TMODEL,SCORE) ;
+    Stats = optimalScores ;
+else
+    Stats = varargin{3} ;
+end
+
+% How about metNameMatch?
+if nargin >= 7
     METNAMEMATCH = varargin{4} ;
 end
     
