@@ -40,9 +40,21 @@ end
 % reduce word size for short inputs
 wordsize = max([ min([wordsize, length(input1)-1, length(input2)-1]) , 2]) ;
 
-v1 = sqrt(double(input1)' * double(input2)) ;
-v2 = (v1 - floor(v1)) < 1e-9 ;
+% % quick and dirty implementations, finds 'b' == ' ' and 'y' == 'd' etc...
+% v1 = sqrt(double(input1)' * double(input2)) ;
+% v2 = (v1 - floor(v1)) < 1e-9 ;
+
+% % nicer implementation, only slightly slower but more correct
+v2 = repmat(double(input1)',1,length(input2)) == repmat(double(input2),length(input1),1) ;
+
 v3 = v2(wordsize:end,wordsize:end) .* v2(1:(end-wordsize+1),1:(end-wordsize+1)) ;
 score = sum(sum(v3)) / ((length(input1)-wordsize) * (length(input2)-wordsize)) ;
 
 score(isnan(score)) = 0 ;
+
+% % for testing only
+% for i1 = 1:length(input1)
+%     for i2 = 1:length(input2)
+%         t{i1,i2} = [input1(i1) input2(i2)] ;
+%     end
+% end
