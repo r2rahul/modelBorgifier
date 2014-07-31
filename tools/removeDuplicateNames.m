@@ -59,6 +59,15 @@ for iInfo = 1:length(infoList)
     for iInfoPart = 2:length(newInfoCell) 
         newInfo = [newInfo '|' newInfoCell{iInfoPart}] ;  
     end
+    % Remove leading of tailing pipe characters
+    if ~isempty(newInfo)
+        while strcmp(newInfo(1),'|')
+            newInfo = newInfo(2:end) ;
+        end
+        while strcmp(newInfo(end),'|')
+            newInfo = newInfo(1:end-1) ;
+        end
+    end
     % Replace the information the updated string. 
     infoList{iInfo} = newInfo ; 
 end

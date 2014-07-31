@@ -37,13 +37,12 @@ if strcmp(input1, input2)
     return
 end
 
-li2 = length(input2)-wordsize ;
-score = zeros(length(input1)-wordsize,1) ;
-for i1 = 1:length(input1)-wordsize
-    for i2 = 1:li2
-        score(i1) = strcmpi(input1(i1:i1+wordsize), input2(i2:i2+wordsize)) ;
-    end
-end
-score = mean(score) / max(score) ;
+% reduce word size for short inputs
+wordsize = max([ min([wordsize, length(input1)-1, length(input2)-1]) , 2]) ;
+
+v1 = sqrt(double(input1)' * double(input2)) ;
+v2 = (v1 - floor(v1)) < 1e-9 ;
+v3 = v2(wordsize:end,wordsize:end) .* v2(1:(end-wordsize+1),1:(end-wordsize+1)) ;
+score = sum(sum(v3)) / ((length(input1)-wordsize) * (length(input2)-wordsize)) ;
 
 score(isnan(score)) = 0 ;

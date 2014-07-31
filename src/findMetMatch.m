@@ -192,12 +192,17 @@ if (hit == 0) && (sum(METNAMEMATCH(cMet,:)) == 0)
     hit = 1 ;
 end
 
+% avoid NaN
+metScores(isinf(metScores)) = 0 ;
 if max(metScores) > 0 % Avoid NaN.
     metScores = metScores - min(metScores) ;
     metScores = metScores./max(metScores) ;
 else
     metScores = 0.01*ones(size(metScores)) ;
 end
+
+% if the last step introduced NaNs, replace them by 0
+metScores(isnan(metScores)) = 0 ;
 
 %% Take some metabolites out of the running.
 % If tRxn is provided, then reduce all scores for noninvolved mets to 0.

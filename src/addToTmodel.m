@@ -40,6 +40,7 @@ function [TmodelC, Cmodel] = addToTmodel(Cmodel,Tmodel,rxnList,metList, varargin
 %
 
 %% Declare variables.    
+global SCORE METNAMEMATCH
 % Number of reactions and metabolites being added. 
 cRxns = length(rxnList) ;
 cMets = length(metList) ; 
@@ -71,21 +72,22 @@ sepFieldNames = ({'rev' 'lb' 'ub' 'c'}) ;
 
 Tfields = fieldnames(Tmodel) ;
 rxnFields = false(size(Tfields)) ;
-for itf = 1:length(rxnFields)
+metFields = false(size(Tfields)) ;
+for itf = 1:length(Tfields)
     if size(Tmodel.(Tfields{itf}),1) == size(Tmodel.rxns,1) % if size is that of rxns
         if ~ismember(Tfields{itf}, [sepFieldNames, 'rxns', 'rxnID', 'rxnEquation' 'metNums' 'rxnMetNames']) % exclude some fields
             rxnFields(itf) = true ;
         end
-    end
+    elseif size(Tmodel.(Tfields{itf}),1) == size(Tmodel.mets,1) % if size is that of mets
+        if ~ismember(Tfields{itf}, [sepFieldNames, 'mets', 'metID', 'S', 'metHnum','metCharge','metNoComp']) % exclude some fields
+            metFields(itf) = true ;
+        end
+    end 
 end
 rxnFieldNames = Tfields(rxnFields) ;
+metFieldNames = Tfields(metFields) ;
 
 getMoDesig = 4 ; 
-
-% Metabolite related field names, excluding .mets and metID. None get a
-% model designatino.
-metFieldNames = ({'metNames' 'metFormulas' 'metKEGGID' 'metSEEDID' ...
-                  'metChEBIID' 'metPubChemID' 'metInChIString'}) ;
 
 % Add indentity and number arrays for model being added.
 Tmodel.Models.(cName).rxns = false(length(Tmodel.rxns),1) ;
@@ -366,6 +368,34 @@ for cMet = 1:cMets
         Tmodel.(metFieldNames{iField}){tMet} = Tinfo ;
     end
     
+end
+
+%% ensure must-have fields are there
+% Get standard field names. 
+fields = TmodelFields ; 
+% Reaction related cell field names. 
+for ir = 1:length(fields{1})
+    if ~isfield(Tmodel,fields{1}{ir})
+        Tmodel.(fields{1}{ir}) = cell(size(Tmodel.rxns)) ;
+    end
+end
+% Reaction related double Fields (which are kept model specific).
+for ir = 1:length(fields{2})
+    if ~isfield(Tmodel,fields{2}{ir})
+        Tmodel.(fields{2}{ir}) = zeros(size(Tmodel.rxns)) ;
+    end
+end
+% Metabolite related cell field names. 
+for ir = 1:length(fields{3})
+    if ~isfield(Tmodel,fields{3}{ir})
+        Tmodel.(fields{3}{ir}) = cell(size(Tmodel.mets)) ;
+    end
+end
+% Metabolite related double field names. 
+for ir = 1:length(fields{4})
+    if ~isfield(Tmodel,fields{4}{ir})
+        Tmodel.(fields{4}{ir}) = cell(size(Tmodel.mets)) ;
+    end
 end
 
 %% output Tmodel

@@ -18,6 +18,9 @@ function Tmodel = mergeTrxns(Tmodel, mergerxns, mergerxnsratio)
 % kept separate during the model matching process
 % 
 
+% merge model-specific information
+modelfields = fieldnames(Tmodel.Models) ;
+
 nowRemoveRxns = [] ;
 rxnfields = fieldnames(Tmodel) ;
 rxnfields = rxnfields(strncmp(rxnfields,'rxn',3)) ;
@@ -29,8 +32,7 @@ for i = 1:length(mergerxns)
     % remember which duplicate reactions should be removed
     nowRemoveRxns(end + (1:length(mergerxns{i}(2:end))) ) = mergerxns{i}(2:end) ; %#ok<*AGROW>
         
-    % merge model-specific information
-    modelfields = fieldnames(Tmodel.Models) ;
+    
     for im = 1:length(modelfields)
         % rxns in Models
         Tmodel.Models.(modelfields{im}).rxns(mergerxns{i}(1)) = ...

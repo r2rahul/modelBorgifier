@@ -46,7 +46,7 @@ function [TmodelC,Cspawn,Stats, CMODEL] = mergeModels(CmodelIn,TmodelIn, ...
 % optimizeCbModel
 
 %% Declare variables.
-global SCORE  TMODEL CMODEL
+global SCORE  TMODEL  CMODEL
 CMODEL = CmodelIn ;
 TMODEL = TmodelIn ;
 SCORE = scoreIn ;
@@ -95,14 +95,12 @@ metList(metList > TmetNum) = TmetNum+(1:sum(metList>TmetNum)) ;
 while any(rxnList < 0)
     fprintf('Problems within rxnList, resolve with GUI.\n')
     [rxnList,metList,Stats] = reactionCompare(CMODEL,TMODEL,SCORE,rxnList,metList,Stats);
-    
 end
 
 %% Reconsider
-
-
 %% Reactions that don't have the same stoich between Cmodel and Cspawn
 CMODELoriginal = CMODEL ;
+compareFluxes = 1 ;
 try
 checkSimilarity = 1 ;
 while checkSimilarity
@@ -188,10 +186,12 @@ while checkSimilarity
     Stats.metList = metList ;
 end
 catch % return savely if re-matching is aborted by user
-    fprintf('Checking of matrix equality terminated.\n')
+    fprintf('Checking of matrix equality terminated. Quitting.\n')
+    return
 end
 
 %% Checking flux calculations.
+
 % Are objective functions the same?
 if ~(find(CMODEL.c(FluxCompare.CrxnsSorti)) == ...
         find(Cspawn.c(FluxCompare.SrxnsSorti)))
@@ -218,6 +218,7 @@ try
 catch
     fprintf('Cannot compute fluxes.\n')
 end
+
 
 % If the flux values
 if (FBACmodel.f ~= FBACspawn.f) || ~isempty(find(FluxCompare.fluxDiff,1))

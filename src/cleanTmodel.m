@@ -352,8 +352,16 @@ for iField = 1:length(share)
 end
   
 %% Remove duplicate reaction longnames and IDs
-Tmodel.rxnNames = removeDuplicateNames(Tmodel.rxnNames) ;
-Tmodel.rxnID = removeDuplicateNames(Tmodel.rxnID) ;
+% merge model-specific information
+allfields = fieldnames(Tmodel) ;
+for ia = 1:length(allfields)
+    if iscell(Tmodel.(allfields{ia}))
+        Tmodel.(allfields{ia}) = removeDuplicateNames(Tmodel.(allfields{ia})) ;
+    end
+end
+% Tmodel.rxnNames = removeDuplicateNames(Tmodel.rxnNames) ;
+% Tmodel.rxnID = removeDuplicateNames(Tmodel.rxnID) ;
+
 
 %% Clear leftover fields from the matching process
 deleteFields = {'rxnComp' 'metNums' 'rxnMetNames'} ; 
