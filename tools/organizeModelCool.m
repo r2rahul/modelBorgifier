@@ -162,3 +162,9 @@ end
 % Reorder S matrix.
 Model.S = Model.S(:,rxnIndex) ;
 Model.S = Model.S(metIndex,:) ;
+
+% Reorder RxnGeneMat
+if isfield(Model, 'rxnGeneMat') ;
+    Model.rxnGeneMat = Model.rxnGeneMat(rxnIndex,:) ;
+end
+

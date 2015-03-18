@@ -75,7 +75,7 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
-global TMODEL 
+global TMODEL
 
 % Pull out information from varargin
 if length(varargin) ~= 1
@@ -124,7 +124,10 @@ set(handles.uitable_rxn,'CellSelectionCallback',{@rxnTableCallback,...
 metRowHeaders = get(handles.uitable_met,'RowName') ;
 set(handles.uitable_met,'RowName', metRowHeaders(1:end-1)) ;
 
-                                
+% present rxnViewList
+handles.rxnViewList = find(handles.rxnList >= 0) ;
+handles.rxnViewNow = length(handles.rxnViewList) ;
+
 % Update handles structure
 guidata(hObject, handles);
 
@@ -195,6 +198,20 @@ jscroll.repaint %apply changes
 guidata(hObject, handles) ;
 end
 
+function pushbutton_rxback_Callback(hObject, eventdata, handles)       
+set(handles.edit_rxn_num,'String', num2str(handles.rxnViewList(handles.rxnViewNow)))
+pushbutton_populatetable_Callback(handles.pushbutton_populatetable,[],handles) ;
+handles.rxnViewNow = max([1, handles.rxnViewNow-1]) ;
+guidata(hObject, handles)
+end
+
+function pushbutton_rxfwd_Callback(hObject, eventdata, handles)
+handles.rxnViewNow = min([length(handles.rxnViewList), handles.rxnViewNow+1]) ;
+set(handles.edit_rxn_num,'String', num2str(handles.rxnViewList(handles.rxnViewNow)))
+pushbutton_populatetable_Callback(handles.pushbutton_populatetable,[],handles) ;
+guidata(hObject, handles)
+end
+
 % --- Executes on button press in pushbutton_nextNewRxn.
 function handles = pushbutton_nextNewRxn_Callback(hObject,eventdata,handles)
 % Find first reaction in rxnList which has no match (0) and a SCORE greater
@@ -210,7 +227,7 @@ if isempty(handles.cRxn)
 end
 set(handles.edit_rxn_num,'String',handles.cRxn);
 handles.nMatch = str2double(get(handles.edit_num_matches,'String'));
-
+        
 % Function populates tables.
 fillTables(handles) 
 
@@ -252,6 +269,8 @@ if ~isnan(selectedRxn)
     % If the reaction has not already been declared. 
     if isempty(find(handles.rxnList == selectedRxn,1))
         handles.rxnList(handles.cRxn) = selectedRxn ;
+        handles.rxnViewList(end+1) = handles.cRxn ;
+        handles.rxnViewNow = length(handles.rxnViewList) ;
         
         % Compare metabolites from reaction.
         handles.metList = prepareMetCompare(handles) ; 
@@ -290,6 +309,8 @@ function pushbutton_new_Callback(hObject, eventdata, handles)
 if handles.rxnList(handles.cRxn) == -1 || ...
         handles.rxnList(handles.cRxn) == 0
     handles.rxnList(handles.cRxn) = 0 ;
+    handles.rxnViewList(end+1) = handles.cRxn ;
+    handles.rxnViewNow = length(handles.rxnViewList) ;
     set(handles.text_error,'String','Alles Klar (All Clear)') ;
     
     % Compare metabolites from reaction.
@@ -354,8 +375,6 @@ set(h,'Enable','off')
               
 handles.M.scoreTotal = handles.M.Stats.scoreTotal ;
 set(h,'Enable','on') 
-
-pushbutton_auto_Callback(handles.pushbutton_auto, eventdata, handles)
 end
 
 % --- Executes on button press in pushbutton_svm.
@@ -673,9 +692,40 @@ for ic = 1:size(nowtable,2)
         if ir == 1 
             % add leading whitespace to all cells
             nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
+        elseif ir == 5 % EC numbers
+            ecmatch = false ;
+            nowec = ctable{ir-1,1} ;
+            if ~isempty(nowec)
+                nowec = regexp(nowec,'[\|:]','split') ;
+                nowec = nowec(cell2mat(cellfun(@(a)length(strfind(a,'.')),nowec,'Uniformoutput',false)) == 3) ;
+                for iec = 1:length(nowec)
+                    if ~ecmatch
+                        nowec1 = nowec{iec} ;
+                        if ~isempty(strfind(nowtable{ir,ic},nowec1))
+                            ecmatch = true ;
+                        end
+                    end
+                end
+                nowtable{ir,ic} = colText(['&nbsp; ' nowtable{ir,ic}], colOptions{2-ecmatch} ) ;
+            else
+                nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
+            end
         elseif ~isempty(nowtable{ir,ic}) && ~isempty(ctable{ir-1,1}) && (ir ~= 4)
-            nowtable{ir,ic} = colText(['&nbsp; ' nowtable{ir,ic}], ...
-            colOptions{ 1+isempty(strfind(nowtable{ir,ic}, ctable{ir-1,1}))}) ;
+            centries = regexp(ctable{ir-1,1} ,'\|','split') ;
+            tentries = regexp(nowtable{ir,ic},'\|','split') ;
+            anymatch = [] ;
+            for jc = 1:length(centries)
+                for jt = 1:length(tentries)
+                    anymatch(jc,jt) = stringSimilarityForward(centries{jc},tentries{jt},3) ;
+                end
+            end
+            anymatch = max(max(anymatch)) ;
+%             perfectmatch = any(ismember(centries, tentries ) ) ;
+%             if ~perfectmatch 
+                nowtable{ir,ic} = colText(['&nbsp; ' nowtable{ir,ic}], 255*[1-anymatch 0 anymatch] ) ;
+%             else
+%                 nowtable{ir,ic} = colText(['&nbsp; ' nowtable{ir,ic}], colOptions{ 2-perfectmatch } ) ;
+%             end
         else
             % add leading whitespace to all cells
             nowtable{ir,ic} = ['  ' nowtable{ir,ic}] ;
@@ -974,3 +1024,5 @@ function allFormulas = formulasPresentCheck(nowstring)
         end
     end
 end
+
+

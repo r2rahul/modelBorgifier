@@ -13,14 +13,15 @@
 % jrb@brain-biotech.de
 %
 %
-function fields = TmodelFields(~)
+function fields = TmodelFields
 % TmodelFields returns the field names of the Tmodel structure. This is
 % to help allievate control between different scripts.
 %
-% [rxnFields,numField,metFields,allFields] = TmodelFields(~)
+% [rxnFields,numField,metFields,allFields] = TmodelFields
 %
 %INPUTS
-% 
+% -none-
+%
 %OUTPUTS
 % Fields        A column cell array that contains the following in order. 
 % rxnFields

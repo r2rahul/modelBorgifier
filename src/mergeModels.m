@@ -46,7 +46,7 @@ function [TmodelC,Cspawn,Stats, CMODEL] = mergeModels(CmodelIn,TmodelIn, ...
 % optimizeCbModel
 
 %% Declare variables.
-global SCORE  TMODEL  CMODEL
+global SCORE  TMODEL  CMODEL METNAMEMATCH
 CMODEL = CmodelIn ;
 TMODEL = TmodelIn ;
 SCORE = scoreIn ;
@@ -76,8 +76,14 @@ while reviewMets
     % Review all above mets with GUI.
     if ~isempty(reviewMets)
         fprintf('Problems within metList, resolve with GUI.\n')
-        reviewMetsAgain = input('Press c to continue anyways or any other key to re-check metabolite matching.\n','s') ;
-        if ~strcmpi(reviewMetsAgain,'c')
+        fprintf('Press c to continue anyways or \n')
+        fprintf('press r to also re-match the affected reactions or \n')
+        reviewMetsAgain = input('any other key to re-check metabolite matching.\n','s') ;
+        if strcmpi(reviewMetsAgain,'r')
+            rxnList( sum(abs(CmodelIn.S(reviewMets,:)),1) ~= 0) = -1 ;
+            metList( reviewMets) = 0 ;
+            [rxnList, metList, Stats] = reactionCompare(CMODEL,TMODEL,SCORE, rxnList, metList, Stats, METNAMEMATCH) ;
+        elseif ~strcmpi(reviewMetsAgain,'c')
             RxnInfo.rxnIndex = 0 ; % Tells GUI just look at mets.
             RxnInfo.rxnList = rxnList ;
             RxnInfo.metList = metList ;
@@ -215,25 +221,25 @@ try
     % Difference in fluxes.
     FluxCompare.fluxDiff = abs(FBACmodel.xSort - FBACspawn.xSort) ;
     FluxCompare.fluxDiff(FluxCompare.fluxDiff < 1e-7) = 0  ;
+
+    % If the flux values
+    if (FBACmodel.f ~= FBACspawn.f) || ~isempty(find(FluxCompare.fluxDiff,1))
+        fprintf('Fluxes not the same. Check Stats.FBAoverview\n')
+        [~, csort] = sort(abs(FBACmodel.x),'descend') ;
+        [~, ssort] = sort(abs(FBACspawn.x),'descend') ;
+        Stats.FBAoverview = [CMODEL.rxns(csort) CMODEL.rxnEquations(csort) num2cell(FBACmodel.x(csort)) ...
+            Cspawn.rxns(ssort) Cspawn.rxnEquations(ssort) num2cell(FBACspawn.x(ssort)) ] ;
+    else
+        fprintf('Flux test failed.\n')
+    end
+    
+    Stats.FluxCompare = FluxCompare ;
+    Stats.FBACmodel = FBACmodel ;
+    Stats.FBACspawn = FBACspawn ;
+
 catch
     fprintf('Cannot compute fluxes.\n')
 end
-
-
-% If the flux values
-if (FBACmodel.f ~= FBACspawn.f) || ~isempty(find(FluxCompare.fluxDiff,1))
-    fprintf('Fluxes not the same. Check Stats.FBAoverview\n')
-    [~, csort] = sort(abs(FBACmodel.x),'descend') ;
-    [~, ssort] = sort(abs(FBACspawn.x),'descend') ;
-    Stats.FBAoverview = [CMODEL.rxns(csort) CMODEL.rxnEquations(csort) num2cell(FBACmodel.x(csort)) ...
-        Cspawn.rxns(ssort) Cspawn.rxnEquations(ssort) num2cell(FBACspawn.x(ssort)) ] ;
-else
-    fprintf('Flux test failed.\n')
-end
-
-Stats.FluxCompare = FluxCompare ;
-Stats.FBACmodel = FBACmodel ;
-Stats.FBACspawn = FBACspawn ;
 
 %% Organize and Get stats on combined Tmodel.
 TmodelC = cleanTmodel(TmodelC) ;

@@ -110,8 +110,8 @@ for i = 1:nRxns
         stoicheck = 1 ;
         for ie = 2:length(eqset) ;
             rxnratio = unique(Tmodel.S(metpos{i},eqset(1)) ./ Tmodel.S(metpos{i},eqset(ie))) ;
-            if length(rxnratio) == 1 && ~isnan(rxnratio)  && ...
-                    sum(rxnNowPresent(eqset(1),:) .* rxnNowPresent(eqset(ie),:)) == 0 
+            if length(rxnratio) == 1 && ~isnan(rxnratio)  % && ...
+                   % sum(rxnNowPresent(eqset(1),:) .* rxnNowPresent(eqset(ie),:)) == 0 % reactions are not present in the same model
                 if askeverytime
                 % if reactions have the same stoichiometry, maybe with a factor
                 disp([Tmodel.rxns{eqset(1)} '(' strjoin( modelnames(rxnNowPresent(eqset(1),:)),'|') ')' ' and '...
@@ -160,6 +160,7 @@ if ismember(beautifynames,{'y', 'a', 'Y', 'A'})
             nowIDsep{ii+1} = lower(nowIDsep{ii+1}(1:min([strfind(nowIDsep{ii+1},'[')-1, length(nowIDsep{ii+1})]))) ;
             nowIDsep{ii+1} = removeproblematiccharacters(nowIDsep{ii+1}) ;
         end
+        nowIDsep{end+1} = Tmodel.metNames{im} ;
         [nowIDalt, ~, freq] = unique(nowIDsep) ;
         nowIDalt = nowIDalt(~cellfun(@isempty,nowIDalt)) ;
         tailnum = [] ; idfreq = [] ;
@@ -167,16 +168,18 @@ if ismember(beautifynames,{'y', 'a', 'Y', 'A'})
             % no alternative name found, keep the current one
         else
             for ii = 1:length(nowIDalt)
-                tailnum(ii) = length(nowIDalt{ii}(max(find(charpos(nowIDalt{ii}))):end))-1 ;
+                tailnum(ii) = length(nowIDalt{ii}(find(charpos(nowIDalt{ii}), 1, 'last' ):end))-1 ;
                 idfreq(ii) = sum(freq == ii) ;
             end
-            [~, goodids] = min((tailnum+2)./(2*idfreq)) ;
+            lengthweight = 0.5*real(sqrt(cellfun(@numel,nowIDalt))) ;
+            numweight =  0.3*real(sqrt(cellfun(@(a)sum(~charpos(a)),nowIDalt))) ;
+            [~, goodids] = min((tailnum+2)./(2*idfreq) + lengthweight + numweight) ;
             % if leading character is a number in original name but "a" in new
             % name, then do nothing
             nowcharpos = charpos(Tmodel.mets{im}) ;
-            if ~strcmp(nowIDalt{goodids}, Tmodel.mets{im}(1:end-3)) && ...
-                    ~(~nowcharpos(1) && strcmp(nowIDalt{goodids}(1),'a')) && ...
-                   length(Tmodel.mets{im}(max(find(charpos(Tmodel.mets{im}(1:end-3)) ) ):end-3)) > 4
+            if ~strcmp(nowIDalt{goodids}, Tmodel.mets{im}(1:end-3)) % && ...
+%                     ~(~nowcharpos(1) && strcmp(nowIDalt{goodids}(1),'a')) && ...
+%                    length(Tmodel.mets{im}(find(charpos(Tmodel.mets{im}(1:end-3)) , 1, 'last' ):end-3)) > 4
                 if askeverytime
                     replacethistime = input(['Should I rename ' Tmodel.mets{im} ' to '...
                                              nowIDalt{goodids} nowcomp ' (y/n)?'], 's') ;
@@ -206,11 +209,11 @@ if ismember(beautifynames,{'y', 'a', 'Y', 'A'})
             end
         else % normal reactions
             nowIDsep = Tmodel.rxns(ir) ;
-            if strcmp(nowIDsep{1}(end-1),'_')
-                % this reaction has probably been already renamed to ensure
-                % unique reaction names. Therefore do nothing.
-                continue
-            end
+%             if strcmp(nowIDsep{1}(end-1),'_') && ~charpos(nowIDsep{1}(end))
+%                 % this reaction has probably been already renamed to ensure
+%                 % unique reaction names. Therefore do nothing.
+%                 continue
+%             end
             % parse alternative rxnIDs
             nowIDs = Tmodel.rxnID{ir} ;
             nowdelim1 = strfind(nowIDs,':') ;
@@ -218,21 +221,27 @@ if ismember(beautifynames,{'y', 'a', 'Y', 'A'})
             for ii = 1:length(nowdelim1)
                 nowIDsep{ii+1} = nowIDs(nowdelim1(ii)+1:min(nowdelim2(nowdelim2 > nowdelim1(ii)))-1) ;
                 nowIDsep{ii+1} = lower(nowIDsep{ii+1}(1:min([strfind(nowIDsep{ii+1},'[')-1, length(nowIDsep{ii+1})]))) ;
-                nowIDsep{ii+1} = removeproblematiccharacters(nowIDsep{ii+1}) ;
+                nowIDsep{ii+1} = nowIDsep{ii+1} ;
             end
+            nowIDsep{end+1} = removeproblematiccharacters(Tmodel.rxnNames{ir}) ;
             [nowIDalt, ~, freq] = unique(nowIDsep) ;
             tailnum = [] ; idfreq = [] ;
             if length(nowIDalt) == 1
                 % no alternative name found, keep the current one
             else
                 for ii = 1:length(nowIDalt)
-                    tailnum(ii) = length(nowIDalt{ii}(max(find(charpos(nowIDalt{ii}))):end))-1 ;
+                    tailnum(ii) = length(nowIDalt{ii}(find(charpos(nowIDalt{ii}), 1, 'last' ):end))-1 ;
                     idfreq(ii) = sum(freq == ii) ;
                 end
-                [~, goodids] = min((tailnum+2)./(2*idfreq)) ;
+                % prefer IDs that have few numbers in the end and prefere
+                % those that are commonly used. Give extra preference to
+                % shorternames.
+                lengthweight = 0.75*real(sqrt(cellfun(@numel,nowIDalt))) ;
+                numweight =  0.3*real(sqrt(cellfun(@(a)sum(~charpos(a)),nowIDalt))) ; 
+                [~, goodids] = min((tailnum+2)./(2*idfreq) + lengthweight + numweight) ;
                 % check that the name is not already taken
-                if sum(strcmp(Tmodel.rxns, nowIDalt{goodids})) == 0 && ...
-                   length(Tmodel.rxns{ir}(max(find(charpos(Tmodel.rxns{ir}) ) ):end)) > 4
+                if sum(strcmp(Tmodel.rxns, nowIDalt{goodids})) == 0 % && ...
+%                    length(Tmodel.rxns{ir}(find(charpos(Tmodel.rxns{ir}) , 1, 'last' ):end)) > 4
                     if askeverytime
                         replacethistime = input(['Should I rename '  Tmodel.rxns{ir}  ' to '...
                                              nowIDalt{goodids} ' (y/n)?'], 's') ;
@@ -319,10 +328,17 @@ for iMet = 1:length(uniqMets)
         % If the field is not empty, break information into parts
         % (as seperated by pipes), and add that information in if
         % it is not already present. 
-        if ~isempty(Tmodel.(share{iF}){sMets(iSis)})
+        checkagain = true ;
+        if iscell(Tmodel.(share{iF}){sMets(iSis)})
+            checkagain = ~isempty([ Tmodel.(share{iF}){sMets(iSis)}{:} ]) ;
+        end
+        if ~isempty(Tmodel.(share{iF}){sMets(iSis)}) && checkagain
           pipePos = [0 ...
                      strfind(Tmodel.(share{iF}){sMets(iSis)},'|') ...
                      length(Tmodel.(share{iF}){sMets(iSis)})+1 ] ;
+          if iscell(pipePos)  % this should not happen, but it did in the past     
+              pipePos = [pipePos{:}] ;
+          end      
           for j = 1:length(pipePos)-1
             nowInfo = Tmodel.(share{iF}){sMets(iSis)} ...
                       (pipePos(j)+1:pipePos(j+1)-1) ;
@@ -350,18 +366,6 @@ end
 for iField = 1:length(share)
     Tmodel.(share{iField}) = removeDuplicateNames(Tmodel.(share{iField})) ; 
 end
-  
-%% Remove duplicate reaction longnames and IDs
-% merge model-specific information
-allfields = fieldnames(Tmodel) ;
-for ia = 1:length(allfields)
-    if iscell(Tmodel.(allfields{ia}))
-        Tmodel.(allfields{ia}) = removeDuplicateNames(Tmodel.(allfields{ia})) ;
-    end
-end
-% Tmodel.rxnNames = removeDuplicateNames(Tmodel.rxnNames) ;
-% Tmodel.rxnID = removeDuplicateNames(Tmodel.rxnID) ;
-
 
 %% Clear leftover fields from the matching process
 deleteFields = {'rxnComp' 'metNums' 'rxnMetNames'} ; 
@@ -371,3 +375,18 @@ for iF = 1:length(existFields)
         Tmodel = rmfield(Tmodel,deleteFields{iF}) ;
     end
 end
+
+%% Remove duplicate reaction longnames and IDs
+% merge model-specific information
+allfields = fieldnames(Tmodel) ;
+for ia = 1:length(allfields)
+    if iscell(Tmodel.(allfields{ia}))
+        try
+        Tmodel.(allfields{ia}) = removeDuplicateNames(Tmodel.(allfields{ia})) ;
+        catch
+            pause(0.1)
+        end
+    end
+end
+
+

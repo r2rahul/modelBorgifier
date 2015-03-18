@@ -190,6 +190,21 @@ Model.S = Tmodel.S(metLog,rxnLog) ;
 Model = buildRxnEquations(Model) ; 
 
 %% Extract gene information.
+% try to reconstruct genes
+if ~isfield(Tmodel.Models.(modelName),'genes') 
+    allgenes = strjoin( Model.grRules, ' ') ;
+    allgenes = strrep(allgenes,'or','') ;
+    allgenes = strrep(allgenes,'and','') ;
+    allgenes = strrep(allgenes,'(',' ') ; 
+    allgenes = strrep(allgenes,')',' ') ;
+    genelist = regexp(allgenes, ' ', 'split') ;
+    genelist = unique(genelist) ;
+    genelist = genelist(~cellfun(@isempty,genelist)) ;
+    if ~isempty(genelist)
+        Tmodel.Models.(modelName).genes = columnvector(genelist) ;
+    end
+end
+
 if isfield(Tmodel.Models.(modelName),'genes')
     nRxns = length(Model.rxns) ; 
     
@@ -202,7 +217,7 @@ if isfield(Tmodel.Models.(modelName),'genes')
     
     % Convert grRules to rules format and pull out genes per reaction. 
     for iRxn = 1:nRxns
-       [genesByRxn{iRxn},rules{iRxn}] = parseBoolean(Model.grRules{iRxn}); 
+       [genesByRxn{iRxn},rules{iRxn}] = parseBoolean(Model.grRules{iRxn}) ; 
     end
 
     % Construct gene to rxn mapping.

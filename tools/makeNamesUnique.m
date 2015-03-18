@@ -49,28 +49,31 @@ if ~isempty(nameInd)
     
     fprintf('%d non-unique names. ',length(nameInd))
     renameFlag = input(['Rename automatically?\n' ...
-                     'Otherwise manual renaming will proceed. (y/n): '],...
+                     'Otherwise manual renaming will proceed. (y/N): '],...
                       's') ;
     if strcmpi(renameFlag,'y') || strcmpi(renameFlag,'yes')
         for i = 1:length(nameInd)
-           thisName = names{nameInd(i)} ;
-           fprintf('Renaming non-unique name %s (%d instances): ',...
+            thisName = names{nameInd(i)} ;
+            fprintf('Renaming non-unique name %s (%d instances): ',...
                 thisName,cnt(nameInd(i)));
-           searchString = regexprep(thisName,'\[','\\[') ;
-           searchString = regexprep(searchString,'\]','\\]') ;
-           searchString = ['^' searchString '$'] ;
-           IDs = find(~cellfun(@isempty,regexp(nameList,searchString))) ;
-           for j = 1:length(IDs)
-               if regexp(nameList{IDs(j)},'\[\w\]$')
-                   nameList{IDs(j)} = [thisName(1:end-3) '_' num2str(j) ...
-                                       thisName(end-2:end)] ;
-               else
-                   nameList{IDs(j)} = [thisName '_' num2str(j)] ;
-               end
-               fprintf('%s\t',nameList{IDs(j)}) ;
-           end
-           fprintf('\n') 
-        end
+            searchString = regexprep(thisName,'\[','\\[') ;
+            searchString = regexprep(searchString,'\]','\\]') ;
+            searchString = ['^' searchString '$'] ;
+            IDs = find(~cellfun(@isempty,regexp(nameList,searchString))) ;
+            if isempty(IDs)
+                IDs = find(strcmp(nameList,thisName))  ;
+            end
+            for j = 1:length(IDs)
+                if regexp(nameList{IDs(j)},'\[\w\]$')
+                    nameList{IDs(j)} = [thisName(1:end-3) '_' num2str(j) ...
+                        thisName(end-2:end)] ;
+                else
+                    nameList{IDs(j)} = [thisName '_' num2str(j)] ;
+                end
+                fprintf('%s\t',nameList{IDs(j)}) ;
+            end
+            fprintf('\n')
+        end        
     end
 end
 

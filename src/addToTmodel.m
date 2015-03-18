@@ -67,6 +67,11 @@ cNameAdd = strcat('|',cName,':') ;
 % Fields which are kept model specific.
 sepFieldNames = ({'rev' 'lb' 'ub' 'c'}) ;
 
+% make sure Tmodel has required fields
+if ~isfield(Tmodel,'b')
+    Tmodel.b = zeros(size(Tmodel.mets)) ;
+end
+
 % Reaction related field names, excluding .rxns, .rxnID and .rxnEquation. 
 % anything after getMoDesig does not get a model designation when added.
 
@@ -75,17 +80,36 @@ rxnFields = false(size(Tfields)) ;
 metFields = false(size(Tfields)) ;
 for itf = 1:length(Tfields)
     if size(Tmodel.(Tfields{itf}),1) == size(Tmodel.rxns,1) % if size is that of rxns
-        if ~ismember(Tfields{itf}, [sepFieldNames, 'rxns', 'rxnID', 'rxnEquation' 'metNums' 'rxnMetNames']) % exclude some fields
+        if ~ismember(Tfields{itf}, [sepFieldNames, 'rxns', 'rxnID', 'rxnEquation', 'metNums', 'rxnMetNames' ]) % exclude some fields
             rxnFields(itf) = true ;
         end
     elseif size(Tmodel.(Tfields{itf}),1) == size(Tmodel.mets,1) % if size is that of mets
-        if ~ismember(Tfields{itf}, [sepFieldNames, 'mets', 'metID', 'S', 'metHnum','metCharge','metNoComp']) % exclude some fields
+        if ~ismember(Tfields{itf}, [sepFieldNames, 'mets', 'metID', 'S']) % exclude some fields
             metFields(itf) = true ;
         end
     end 
 end
 rxnFieldNames = Tfields(rxnFields) ;
 metFieldNames = Tfields(metFields) ;
+
+for ir = 1:length(rxnFieldNames)
+    if ~isfield(Cmodel,rxnFieldNames{ir})
+        if isnumeric(Tmodel.(rxnFieldNames{ir}))
+            Cmodel.(rxnFieldNames{ir}) = zeros(size(Cmodel.rxns)) ;
+        else
+            Cmodel.(rxnFieldNames{ir}) = cell(size(Cmodel.rxns)) ;
+        end
+    end
+end
+for ir = 1:length(metFieldNames)
+    if ~isfield(Cmodel,metFieldNames{ir})
+        if isnumeric(Tmodel.(metFieldNames{ir}))
+            Cmodel.(metFieldNames{ir}) = zeros(size(Cmodel.mets)) ;
+        else
+            Cmodel.(metFieldNames{ir}) = cell(size(Cmodel.mets)) ;
+        end
+    end
+end
 
 getMoDesig = 4 ; 
 
@@ -155,6 +179,11 @@ end
 % Number of current metabolites in Tmodel.
 tMets = length(Tmodel.mets) ; 
 
+% if for some funky reason there are still undecleared metabolites in
+% metList, auto-declare them as new. (This really should not happen)
+disp([strjoin(Cmodel.mets(metList == 0), ', ') ' was not declared and are treated as new.'])
+metList(metList == 0) = max(metList) + (1:sum(metList == 0)) ;
+
 % ensure that there are no gaps in the numbering of new mets
 numNewMets = sum(metList > tMets) ;
 metList(metList > tMets) = tMets + (1:numNewMets) ;
@@ -166,9 +195,13 @@ if tMetsNow > tMets
     % Increase size to Tmodel to accomidate new metabolites.
     Tmodel.mets(end+1:max(metList)) = {''} ;
     Tmodel.metID(end+1:max(metList)) = {''} ;
-    Tmodel.metCharge(end+1:max(metList)) = 0 ;
+    Tmodel.b(end+1:max(metList)) = 0 ;
     for iField = 1:length(metFieldNames)
-        Tmodel.(metFieldNames{iField})(end+1:max(metList)) = {''} ;
+        if isnumeric(Tmodel.(metFieldNames{iField}))
+            Tmodel.(metFieldNames{iField})(end+1:max(metList)) = 0 ;
+        else
+            Tmodel.(metFieldNames{iField})(end+1:max(metList)) = {''} ;
+        end
     end
 
     % Increase size of identity array are by defnition not in old models. 
@@ -271,7 +304,7 @@ for cRxn = 1:cRxns
        % If there is information already in Tmodel, add to it.
        if ~isempty(Tinfo)
          % Some get model designations.
-         if iField <= getMoDesig
+         if ismember(rxnFieldNames{iField}, {'subSystems', 'rxnECNumbers', 'rxnReferences', 'rxnNotes', 'grRules'})
              Tinfo = strcat(Tinfo,cNameAdd,Cinfo) ;
          % And some are simply seperated by a '|'.
          else
@@ -288,7 +321,7 @@ for cRxn = 1:cRxns
        % Else, create a new entry. Again note inclusion/absense of
        % model designation. 
        else
-           if iField <= getMoDesig
+           if ismember(rxnFieldNames{iField}, {'subSystems', 'rxnECNumbers', 'rxnReferences', 'rxnNotes', 'grRules'})
                Tinfo = strcat(cNameNew,Cinfo) ;
            else
                Tinfo = Cinfo ;
@@ -334,10 +367,11 @@ for cMet = 1:cMets
     if isempty(Tmodel.mets{tMet})
         Tmodel.mets{tMet} = Cmodel.mets{cMet} ;
         Tmodel.metCharge(tMet) = Cmodel.metCharge(cMet) ;
+        Tmodel.b(tMet) = Cmodel.b(cMet) ;
         
-    % Add in ID info
-    Tmodel.metID{tMet} = strcat(Tmodel.metID{tMet},cNameNew, ...
-                                Cmodel.metID{cMet}) ;
+        % Add in ID info
+        Tmodel.metID{tMet} = strcat(Tmodel.metID{tMet},cNameNew, ...
+                                    Cmodel.metID{cMet}) ;
     else
         % Add in ID info
         Tmodel.metID{tMet} = strcat(Tmodel.metID{tMet},cNameAdd, ...
@@ -345,27 +379,28 @@ for cMet = 1:cMets
     end
     
     for iField = 1:length(metFieldNames)
-        % Declare the current info now, makes code cleaner.
-        Cinfo = Cmodel.(metFieldNames{iField}){cMet} ;
-        Tinfo = Tmodel.(metFieldNames{iField}){tMet} ;
-        % Ensure information exists and has not been added
-        if ~isempty(Cinfo) && isempty(strfind(Tinfo,Cinfo))
-            % Split information up into parts, only adding new info.
-            if ~isempty(Tinfo)
-                pipePos = [0 strfind(Cinfo,'|') length(Cinfo)+1] ;
-                for iP = 1:length(pipePos)-1
-                    nowInfo = Cinfo(pipePos(iP)+1:pipePos(iP+1)-1) ;
-                    if isempty(strfind(Tinfo,nowInfo))
-                        Tinfo = strcat(Tinfo,'|',nowInfo) ;
+        if iscell(Cmodel.(metFieldNames{iField}))
+            % Declare the current info now, makes code cleaner.
+            Cinfo = Cmodel.(metFieldNames{iField}){cMet} ;
+            Tinfo = Tmodel.(metFieldNames{iField}){tMet} ;
+            % Ensure information exists and has not been added
+            if ~isempty(Cinfo) && isempty(strfind(Tinfo,Cinfo))
+                % Split information up into parts, only adding new info.
+                if ~isempty(Tinfo)
+                    pipePos = [0 strfind(Cinfo,'|') length(Cinfo)+1] ;
+                    for iP = 1:length(pipePos)-1
+                        nowInfo = Cinfo(pipePos(iP)+1:pipePos(iP+1)-1) ;
+                        if isempty(strfind(Tinfo,nowInfo))
+                            Tinfo = strcat(Tinfo,'|',nowInfo) ;
+                        end
                     end
+                else
+                    Tinfo = Cinfo ;
                 end
-            else
-                Tinfo = Cinfo ;
-            end
-        end     
-  
+            end     
         % Update information, for each field.
         Tmodel.(metFieldNames{iField}){tMet} = Tinfo ;
+        end
     end
     
 end

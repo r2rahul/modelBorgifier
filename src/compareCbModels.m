@@ -74,6 +74,9 @@ end
 
 nTrxns = length(Tmodel.rxns) ;
 
+% roughly estimate time for matching
+disp(['Estimated time for automated matching: ' num2str(length(Tmodel.rxns) * length(Cmodel.rxns) * 9.5 / 8500000) ' h.'])
+
 % Names of all models currently in Tmodel.
 modelNames = fieldnames(Tmodel.Models) ;
 
@@ -363,7 +366,7 @@ h = waitbar(0,'Processing metabolites.') ;
 for i = compCrxns
     % Allocate scoring arrays in a structure
     for iStack = 1:length(metType)
-    matchStack.(metType{iStack}) = zeros(nTrxns,3) ;
+        matchStack.(metType{iStack}) = zeros(nTrxns,3) ;
     end
     for j = 1:nTrxns
         for iStack = 1:length(metType)

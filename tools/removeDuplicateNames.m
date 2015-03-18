@@ -34,7 +34,10 @@ for iInfo = 1:length(infoList)
     info = infoList{iInfo} ; 
     newInfo = '' ;
     % Break information into parts.
-    pipePos = [0 strfind(info,'|') length(info)+1] ;
+    if iscell(info)
+        info = [info{:} ] ;
+    end
+    pipePos = [0, strfind(info,'|'), length(info)+1] ;
     newInfoCell = {[]} ; 
     newInfoLength = 0 ; 
     for iP = 1:length(pipePos)-1

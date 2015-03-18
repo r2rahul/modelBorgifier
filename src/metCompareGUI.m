@@ -131,6 +131,7 @@ if isempty(handles.RxnInfo.nowMet)
 end
 set(handles.popup_met,'Value',handles.RxnInfo.nowMet) ;
 popup_met_Callback(handles.popup_met, eventdata, handles)
+set(handles.pushbutton_recheck_reaction,'Visible','off') % not ready yet
 
 % Create reaction equation based of best match suggestions.
 handles = metMatchRxnEquation(hObject, handles) ;
@@ -360,6 +361,15 @@ function editNMatches_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 end
 
+% --- Executes on button press in pushbutton_recheck_reaction.
+function pushbutton_recheck_reaction_Callback(hObject, eventdata, handles)
+global CMODEL
+nowmet = regexp(handles.RxnInfo.metData{1},',','split') ;
+handles.RxnInfo.rxnList(CMODEL.S(str2double(nowmet{end}),:)~= 0) = -1 ;
+set(handles.chooseNew,'Enable','on') ;
+guidata(hObject, handles) ;
+end
+
 %% Subfunctions
 % Populates both met and match tables.
 function populateMetTables(handles)
@@ -434,6 +444,9 @@ end
 % Set color of good and bad correspondence in table.
 colOptions = {'blue', 'red'} ;
 for ic = 1:size(metMatchTable,2)
+    if ~isnumeric(metMatchTable{1,ic})
+        continue
+    end
     metMatchTable{1,ic} = ['<html><text>&nbsp; ' metMatchTable{1,ic} ...
         '</text><span style="background-color:' ...
         dec2hex(round(255*(1-str2num(metMatchTable{1,ic}))),2) ...
@@ -700,3 +713,6 @@ addMetInfo(nowmet)
 popup_met_Callback(handles.popup_met, [], handles)
 
 end
+
+
+
