@@ -90,11 +90,15 @@ else
 end
 
 % Need scoreTotal now to create rxnList if Stats is not provided.
-if nargin >= 6
 %     Stats = optimalScores(CMODEL,TMODEL,SCORE) ;
-    Stats = optimalScores ;
+if nargin >= 6
+    if ~isempty(varargin{3})
+        Stats = varargin{3} ;
+    else
+        Stats = optimalScores ;
+    end
 else
-    Stats = varargin{3} ;
+    Stats = optimalScores ;
 end
 
 % How about metNameMatch?
