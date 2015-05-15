@@ -197,6 +197,7 @@ if ~isfield(Tmodel.Models.(modelName),'genes')
     allgenes = strrep(allgenes,'and','') ;
     allgenes = strrep(allgenes,'(',' ') ; 
     allgenes = strrep(allgenes,')',' ') ;
+    allgenes = strrep(allgenes,'|',' ') ;
     genelist = regexp(allgenes, ' ', 'split') ;
     genelist = unique(genelist) ;
     genelist = genelist(~cellfun(@isempty,genelist)) ;
@@ -244,7 +245,7 @@ if isfield(Tmodel.Models.(modelName),'genes')
     
     % Put things in the model.
     Model.genes = allGenes ;
-    Model.rules = rules' ; 
+    Model.rules = columnvector(rules) ; 
     Model.rxnGeneMat = rxnGeneMat ; 
 end   
 

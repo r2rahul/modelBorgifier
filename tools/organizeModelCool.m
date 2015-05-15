@@ -112,6 +112,26 @@ rNumFields = fields{2} ;
 metFields = fields{3} ; 
 % Metabolite related double field names. 
 mNumFields = fields{4} ; 
+% guess correct handling of remaining fields
+otherfields = setdiff(fieldnames(Model),[rxnFields; rNumFields; metFields; mNumFields ; {'S' ; 'rxnGeneMat' ; 'description'; 'genes'}]) ;
+for io = 1:length(otherfields)
+    if all(size(Model.(otherfields{io})) == size(Model.rxns))
+        if isnumeric(Model.(otherfields{io}))
+            rNumFields{end+1} = otherfields{io} ;
+        else
+            rxnFields{end+1} = otherfields{io} ;
+        end
+    elseif all(size(Model.(otherfields{io})) == size(Model.mets))
+        if isnumeric(Model.(otherfields{io}))
+            mNumFields{end+1} = otherfields{io} ;
+        else
+            metFields{end+1} = otherfields{io} ;
+        end
+    else
+        warning(['removing handle ' otherfields{io} ])
+        Model = rmfield(Model, otherfields{io}) ;
+    end
+end
 
 % Reorder reaction related lists.
 for iField = 1:length(rxnFields)
